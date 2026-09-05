@@ -19,7 +19,7 @@ NOTICE = "Source-available with required attribution"
 PROVIDER_URL = "https://catapultaiwork.com"
 FORBIDDEN_PARTS = {
     ".git", ".venv", ".vercel", "data", "tmp", "node_modules",
-    "__pycache__", ".pytest_cache", ".ruff_cache", "dist", "build",
+    "__pycache__", ".pytest_cache", ".ruff_cache", ".playwright-mcp", "dist", "build",
 }
 FORBIDDEN_SUFFIXES = {".pem", ".key", ".db", ".sqlite", ".sqlite3", ".dump", ".log"}
 SECRET_PATTERNS = {

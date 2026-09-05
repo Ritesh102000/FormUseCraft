@@ -70,7 +70,30 @@ by the selected account/calendar. There is no per-form calendar picker yet.
 Never paste secrets or live responses into public issues. The owner interface
 shows connection state, not refresh tokens or client secrets.
 
-## Optional local-only setup
+## Local browser setup
+
+`uv run python scripts/dev.py` now enables the browser connection page locally,
+as well as the meeting wizard. Open **Google integrations**, set your Web OAuth
+client ID and secret in the ignored `.env`, and restart the app. Register the
+exact displayed callback, normally
+`http://127.0.0.1:8480/oauth/google/callback`. Google permits HTTP loopback redirect
+URIs for local testing; hosted deployments still require HTTPS. Use Chrome or
+Safari for the actual Google sign-in because Google can reject embedded browsers.
+
+The dev launcher stores a stable secret in ignored `data/dev_secret.key`, so
+encrypted Google grants remain readable across restarts. Preserve that file
+alongside the local database. Browser credentials are stored in PostgreSQL; do
+not mix them with Desktop OAuth token files. This local mode rejects remote
+admin access and non-loopback origins. The launcher sets
+`FORMCRAFT_LOCAL_BROWSER_GOOGLE=1` automatically.
+
+The form builder shows a connection panel. A first save without Google prompts
+you to connect or choose **Use app database only**; PostgreSQL stores forms and
+responses either way. Setup
+opens in another tab to preserve edits. For existing forms, return after
+connection and choose **Create this form's Sheet**, or **Responses → Create Sheet**.
+
+## Advanced local-only split setup
 
 The advanced local-admin/public split still supports
 `uv run python scripts/google_setup.py` with a Desktop OAuth client and

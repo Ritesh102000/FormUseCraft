@@ -32,7 +32,8 @@ Formcraft is a FastAPI application with Jinja templates, vanilla JavaScript,
 PostgreSQL, optional Google Sheets synchronization, and optional meeting
 booking. Hosted mode supports one environment-defined owner, a protected
 browser dashboard, and an encrypted owner Google connection. Public-only and
-local-admin modes remain available. Multi-user workspaces and payments are not
+local-admin modes remain available. The dev launcher enables browser Google setup
+on loopback only and persists its encryption secret in ignored data/dev_secret.key. Multi-user workspaces and payments are not
 implemented. Publication to Ritesh102000/FormUseCraft is authorized by the owner.
 
 ## Code map

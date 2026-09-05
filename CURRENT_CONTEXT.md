@@ -117,3 +117,37 @@ checked during actual requests, and errors leave manual filling available.
 
 Activation-change verification: 157 tests, Ruff, JavaScript syntax, release notice
 scan, and whitespace checks passed. Live key access remains checked on use.
+
+
+## Google onboarding correction
+
+The local dev launcher now enables browser Google connection and meeting setup,
+using a loopback-only owner boundary and a stable ignored encryption secret.
+Hosted HTTPS requirements are unchanged. Manual/AI first saves without Google
+surface a connection prompt; the builder always shows the connection state and
+an existing form's Sheet attachment action. Setup opens in another tab to preserve
+unsaved edits. Actual connection still needs the owner's Web OAuth client and
+consent; no provider accounts or credentials are bundled.
+
+
+## Response browser and native browser login correction
+
+Responses now use database queries with search across answers/IDs, inclusive UTC
+date filters, optional Sheets sync filters, numeric/text sorts, stable tie-breaking,
+and 25/50/100-row pages across the whole form. Table/card previews open a protected
+full response, including archived answers and expandable hidden metadata. Mobile
+filters collapse, filter state survives view/detail navigation, and timestamps are
+converted to UTC. Exports keep their existing 10,000-response scope.
+
+Local and hosted owner pages now use `Referrer-Policy: same-origin`. The previous
+`no-referrer` policy caused native HTML login POSTs to send `Origin: null`, which
+correctly failed the canonical-origin check. Browser login now succeeds without
+weakening that check; null and foreign origins remain rejected. The Google prompt
+explicitly offers **Use app database only** and explains PostgreSQL persistence.
+
+Verification: 168 tests passed against disposable PostgreSQL with mocked providers,
+including 561-response browsing, history, isolation, escaping, and the Google local
+boundary. Native browser login, search/filter submission, no-results recovery,
+card/detail navigation, and desktop/390px mobile layout were exercised locally.
+The existing one form and one response survived restarts. No live Google grant or
+Vercel deployment was performed. Google still requires the owner's Web OAuth client.

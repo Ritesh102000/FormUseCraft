@@ -36,7 +36,12 @@ def login_attempt_allowed() -> bool:
     return row["attempts"] <= 20
 
 
-def register(app: FastAPI, render: Callable, attach_sheet: Callable) -> None:
+def register(
+    app: FastAPI,
+    render: Callable,
+    attach_sheet: Callable,
+    local_check: Callable | None = None,
+) -> None:
     @app.middleware("http")
     async def owner_boundary(request: Request, call_next):
         # Public responses remain unauthenticated; all owner mutations require
@@ -45,8 +50,14 @@ def register(app: FastAPI, render: Callable, attach_sheet: Callable) -> None:
             request.url.path.startswith("/f/")
             or request.url.path.startswith("/static/")
         )
+        if owner_path and local_check:
+            try:
+                local_check(request)
+            except HTTPException:
+                return JSONResponse({"detail": "Not found"}, status_code=404)
         if (
-            owner_path and request.method not in {"GET", "HEAD", "OPTIONS"}
+            owner_path
+            and request.method not in {"GET", "HEAD", "OPTIONS"}
             and request.headers.get("origin", "").rstrip("/") != settings.base_url
         ):
             return JSONResponse(
@@ -59,7 +70,10 @@ def register(app: FastAPI, render: Callable, attach_sheet: Callable) -> None:
         if owner_path:
             response.headers["Cache-Control"] = "no-store"
             response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
-            response.headers["Referrer-Policy"] = "no-referrer"
+            # no-referrer makes native HTML form POSTs send Origin: null,
+            # breaking login/OAuth/logout under the canonical-origin check.
+            # same-origin still withholds referrers from external destinations.
+            response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         return response
@@ -191,7 +205,6 @@ def register(app: FastAPI, render: Callable, attach_sheet: Callable) -> None:
     @app.post("/admin/{form_id}/booking", dependencies=[Depends(auth.require_admin)])
     async def update_meeting(request: Request, form_id: str):
         return await save_meeting(request, form_id)
-
 
 
 def _native_form(form_id: str) -> dict:

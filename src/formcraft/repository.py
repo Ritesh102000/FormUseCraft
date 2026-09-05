@@ -917,6 +917,63 @@ def list_responses(form_id: str, limit: int = 500) -> list[dict[str, Any]]:
         ).fetchall()
 
 
+def browse_responses(
+    form_id: str, *, search: str = "", start: datetime | None = None,
+    end: datetime | None = None, sync: str = "all", sort: str = "submitted_at",
+    direction: str = "desc", page: int = 1, per_page: int = 25,
+) -> dict[str, Any]:
+    """Query the whole form, with bounded pages and server-owned sort expressions."""
+    questions = {q["id"]: q for q in all_questions(form_id)}
+    where, params = ["r.form_id = %s"], [form_id]
+    if search:
+        where.append("(strpos(lower(r.id), lower(%s)) > 0 OR EXISTS "
+                     "(SELECT 1 FROM jsonb_each(r.payload) a "
+                     "WHERE strpos(lower(a.value::text), lower(%s)) > 0))")
+        params.extend([search, search])
+    if start:
+        where.append("r.submitted_at >= %s")
+        params.append(start)
+    if end:
+        where.append("r.submitted_at < %s")
+        params.append(end)
+    if sync in {"synced", "pending"}:
+        where.append("r.synced = %s")
+        params.append(sync == "synced")
+    predicate = " AND ".join(where)
+    order, order_params = "r.submitted_at", []
+    if sort in questions:
+        if questions[sort]["type"] in {"number", "scale", "rating"}:
+            order = ("CASE WHEN jsonb_typeof(r.payload -> %s) = 'number' "
+                     "THEN (r.payload ->> %s)::numeric END")
+            order_params = [sort, sort]
+        else:
+            order = "lower(NULLIF(r.payload ->> %s, ''))"
+            order_params = [sort]
+    direction_sql = "ASC" if direction == "asc" else "DESC"
+    per_page = per_page if per_page in {25, 50, 100} else 25
+    with readonly() as conn:
+        # One snapshot keeps counts and page bounds consistent during new submissions.
+        conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        total = conn.execute(
+            "SELECT count(*) AS n FROM responses WHERE form_id = %s", (form_id,),
+        ).fetchone()["n"]
+        matched = conn.execute(
+            f"SELECT count(*) AS n FROM responses r WHERE {predicate}", params,
+        ).fetchone()["n"]
+        pages = max(1, (matched + per_page - 1) // per_page)
+        page = min(max(1, page), pages)
+        rows = conn.execute(
+            f"SELECT r.* FROM responses r WHERE {predicate} "
+            f"ORDER BY {order} {direction_sql} NULLS LAST, r.id {direction_sql} "
+            "LIMIT %s OFFSET %s",
+            [*params, *order_params, per_page, (page - 1) * per_page],
+        ).fetchall()
+    return {"rows": rows, "total": total, "matched": matched, "page": page,
+            "pages": pages, "per_page": per_page,
+            "first": (page - 1) * per_page + 1 if matched else 0,
+            "last": min(page * per_page, matched)}
+
+
 def pending_sync(limit: int = 50, form_id: str = "") -> list[dict[str, Any]]:
     with readonly() as conn:
         return conn.execute(

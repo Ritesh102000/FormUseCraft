@@ -10,7 +10,8 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
 # FormUseCraft
 
 Your own form builder, hosted on your own domain. Create forms, collect responses
-in Google Sheets, and let people book meetings on your Google Calendar.
+in your PostgreSQL database, optionally sync them to Google Sheets, and let
+people book meetings on your Google Calendar.
 Provided by [catapultaiwork](https://catapultaiwork.com).
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FRitesh102000%2FFormUseCraft&project-name=formusecraft&repository-name=FormUseCraft&env=FORMCRAFT_DATABASE_URL%2CFORMCRAFT_ADMIN_PASSWORD%2CFORMCRAFT_SECRET_KEY&envDescription=Use+your+own+pooled+PostgreSQL+URL%2C+an+owner+password+of+at+least+12+characters%2C+and+a+unique+random+installation+secret+of+at+least+32+characters.+Google+is+connected+after+deployment.&envLink=https%3A%2F%2Fgithub.com%2FRitesh102000%2FFormUseCraft%2Fblob%2Fmain%2FDEPLOY.md)
@@ -58,6 +59,7 @@ custom domain. Possession of a form link allows submission; links can be forward
 
 - An owner AI builder using your own OpenAI key: describe a form or attach a PDF/image, refine its draft, and edit it in the dashboard.
 - Optional per-form voice assistance: a globe invites visitors to answer questions aloud, confirm values, and review before submitting. Scheduling remains manual.
+- A response browser with answer search, UTC date and Sheets-sync filters, numeric/text sorting, table/card views, pagination, and full answers including removed fields.
 - A visual builder with sections, drafts, publishing, theme accent, and custom
   confirmation messages.
 - Three layouts: one page, section by section, or one question at a time.
@@ -146,7 +148,9 @@ uv run python scripts/dev.py
 Open [the local app](http://127.0.0.1:8480), using `admin` / `devpassword` only
 for this development instance. Embedded PostgreSQL lives in ignored `data/devdb`
 on supported macOS/Linux platforms. It is not a Vercel database. The local demo
-uses local-admin mode; hosted Google OAuth is verified using HTTPS/test fixtures.
+uses local-admin mode with the same browser Google setup and meeting wizard.
+Open **Google integrations** and configure a Web OAuth client with the displayed
+localhost callback. Its encrypted grant uses a stable ignored `data/dev_secret.key`.
 
 For your own local PostgreSQL setup, copy `.env.example`, set the database URL,
 run `scripts/set_password.py`, then `scripts/run.py`. Advanced split installations

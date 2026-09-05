@@ -448,7 +448,7 @@ def register(
             if data.meeting:
                 connection = google_connection.summary()
                 if (
-                    not settings.is_hosted_role
+                    not settings.uses_browser_google
                     or not connection.get("connected")
                     or not connection.get("calendar")
                 ):
@@ -483,7 +483,16 @@ def register(
                     409, "A form already has this title. Refine its title first."
                 ) from None
             attach_sheet(form_id, create=True)
-            return JSONResponse({"id": form_id}, status_code=201)
+            return JSONResponse(
+                {
+                    "id": form_id,
+                    "integration_needed": (
+                        settings.uses_browser_google
+                        and not google_connection.summary()["connected"]
+                    ),
+                },
+                status_code=201,
+            )
 
     @app.post("/f/{public_ref}/ai/session")
     async def voice_session(request: Request, public_ref: str):

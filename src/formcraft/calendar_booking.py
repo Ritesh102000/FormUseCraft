@@ -63,14 +63,14 @@ def _service(profile: str) -> Any:
             "Native Google booking is only configured for the booking profile."
         )
     with _lock:
-        if not settings.is_hosted_role and profile in _services:
+        if not settings.uses_browser_google and profile in _services:
             return _services[profile]
         payload = sheets.token_payload(profile)
         if payload is None:
             raise CalendarUnavailable(
                 "The booking Google profile is not authorized for Calendar yet."
             )
-        if settings.is_hosted_role and not set(BOOKING_SCOPES) <= set(
+        if settings.uses_browser_google and not set(BOOKING_SCOPES) <= set(
             payload.get("scopes", [])
         ):
             raise CalendarUnavailable(
@@ -78,12 +78,12 @@ def _service(profile: str) -> Any:
             )
         creds = Credentials.from_authorized_user_info(
             payload,
-            payload.get("scopes") if settings.is_hosted_role else BOOKING_SCOPES,
+            payload.get("scopes") if settings.uses_browser_google else BOOKING_SCOPES,
         )
         if not creds.valid:
             if creds.expired and creds.refresh_token:
                 creds.refresh(Request())
-                if settings.is_hosted_role:
+                if settings.uses_browser_google:
                     from .google_connection import persist_refresh
 
                     persist_refresh(payload, json.loads(creds.to_json()))
@@ -92,7 +92,7 @@ def _service(profile: str) -> Any:
                     "The Google Calendar authorization is invalid."
                 )
         service = build("calendar", "v3", credentials=creds, cache_discovery=False)
-        if not settings.is_hosted_role:
+        if not settings.uses_browser_google:
             _services[profile] = service
         return service
 

@@ -26,6 +26,9 @@ sys.path.insert(0, str(ROOT / "src"))
 
 
 def main() -> int:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
     try:
         import pgserver
     except ImportError:
@@ -44,7 +47,19 @@ def main() -> int:
     # Every env var must be set before any formcraft module is imported —
     # config.settings is a frozen dataclass built at import time.
     os.environ["FORMCRAFT_DATABASE_URL"] = server.get_uri(database="postgres")
-    os.environ.setdefault("FORMCRAFT_SECRET_KEY", secrets.token_urlsafe(48))
+    # Keep encrypted Google grants readable across local server restarts.
+    secret_file = ROOT / "data" / "dev_secret.key"
+    if not os.getenv("FORMCRAFT_SECRET_KEY"):
+        try:
+            fd = os.open(secret_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            pass
+        else:
+            with os.fdopen(fd, "w") as handle:
+                handle.write(secrets.token_urlsafe(48))
+        os.environ["FORMCRAFT_SECRET_KEY"] = secret_file.read_text().strip()
+    os.environ.setdefault("FORMCRAFT_LOCAL_BROWSER_GOOGLE", "1")
+    os.environ.setdefault("FORMCRAFT_GOOGLE_DEFAULT_PROFILE", "booking")
     os.environ["FORMCRAFT_ROLE"] = role
 
     if role == "admin" and not os.getenv("FORMCRAFT_ADMIN_PASSWORD_HASH"):

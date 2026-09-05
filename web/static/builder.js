@@ -448,7 +448,8 @@ els.save.addEventListener('click', async () => {
         message: 'Form saved and its Google Sheet was created.',
       }));
     }
-    window.location.href = `/admin/${data.id}`;
+    const setup = data.sheet?.status === 'not_connected' ? '?setup=google' : '';
+    window.location.href = `/admin/${data.id}${setup}`;
     return;
   }
   els.save.disabled = false;
@@ -481,3 +482,22 @@ try {
 } catch (error) {
   sessionStorage.removeItem('formcraft-save-notice');
 }
+
+
+const googleSetupPrompt = document.getElementById('google-setup-prompt');
+if (googleSetupPrompt?.hasAttribute('data-open-google-setup')) googleSetupPrompt.showModal();
+document.getElementById('google-setup-later')?.addEventListener('click', () => googleSetupPrompt.close());
+document.querySelector('[data-attach-google-sheet]')?.addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  const status = document.getElementById('google-setup-status');
+  button.disabled = true;
+  status.hidden = false;
+  status.textContent = 'Creating your Google Sheet…';
+  try {
+    const response = await fetch(`/api/forms/${button.dataset.attachGoogleSheet}/sheet`, { method: 'POST' });
+    const data = await response.json();
+    status.textContent = data.created ? 'Google Sheet created. Refresh this page after saving any pending edits to see its link.' : (data.detail || 'Could not create a Sheet. Check your Google connection.');
+  } catch {
+    status.textContent = 'Could not reach the server. Your form is still saved; please try again.';
+  } finally { button.disabled = false; }
+});

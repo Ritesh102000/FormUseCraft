@@ -1,0 +1,38 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% if browser_google %}
+<section class="card" style="padding:var(--sp-5);margin-bottom:var(--sp-5)" aria-label="Google connection setup">
+  <h2>Connect responses and meetings</h2>
+  {% if google_owner.connected %}
+  <p>Google Sheets connected as <strong>{{ google_owner.email }}</strong>.</p>
+  <div class="row">
+    {% if form and form.sheet_url %}<a class="btn btn-sm" href="{{ form.sheet_url }}" target="_blank" rel="noopener">Open this form's Sheet ↗</a>
+    {% elif form %}<button class="btn btn-sm" type="button" data-attach-google-sheet="{{ form.id }}">Create this form's Sheet</button>
+    {% else %}<span class="muted small">Saving this form will create its Google Sheet.</span>{% endif %}
+    <a class="btn btn-sm" href="/admin/integrations" target="_blank" rel="noopener">{{ 'Manage Google connection' if google_owner.calendar else 'Connect Calendar for meetings' }} ↗</a>
+    {% if form and form.booking_mode == 'google_api' %}<a class="btn btn-sm" href="/admin/{{ form.id }}/booking" target="_blank" rel="noopener">Meeting settings ↗</a>
+    {% else %}<a class="btn btn-sm" href="/admin/new-meeting" target="_blank" rel="noopener">Create a meeting form ↗</a>{% endif %}
+  </div>
+  {% else %}
+  <p>Would you like responses sent to Google Sheets? Connect your account once. Add Calendar access if you want meeting bookings.</p>
+  <div class="row"><a class="btn btn-primary" href="/admin/integrations" target="_blank" rel="noopener">Connect Google Sheets / Calendar ↗</a></div>
+  <p class="muted small">Your forms and responses are saved in this app’s PostgreSQL database. Google Sheets adds a synchronized copy. Setup opens in another tab so your edits stay here.</p>
+  {% endif %}
+  <p id="google-setup-status" role="status" hidden></p>
+</section>
+{% if not google_owner.connected %}
+<dialog id="google-setup-prompt" class="card" style="max-width:520px;padding:28px;border:1px solid var(--border)" {% if request.query_params.get('setup') == 'google' %}data-open-google-setup{% endif %} aria-labelledby="google-setup-title">
+  <h2 id="google-setup-title">Form saved. Connect Google?</h2>
+  <p>Connect Google Sheets to collect responses in a spreadsheet. Choose Sheets + Calendar during setup if you also want meeting forms.</p>
+  <p class="muted small">Your form is already saved in PostgreSQL. New responses will be saved there too, with or without Google. You can view and export them from Responses.</p>
+  <div class="stack"><a class="btn btn-primary" href="/admin/integrations" target="_blank" rel="noopener">Connect Google Sheets / Calendar ↗</a><button class="btn" type="button" id="google-setup-later">Use app database only</button></div>
+</dialog>
+{% endif %}
+{% endif %}

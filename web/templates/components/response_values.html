@@ -1,0 +1,22 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% macro answer(value) -%}
+  {% if value is none or value == '' or value == [] %}<span class="muted">No answer</span>
+  {% elif value is sameas true %}Yes{% elif value is sameas false %}No
+  {% elif value is iterable and value is not string and value is not mapping %}{{ value | join(', ') }}
+  {% else %}{{ value }}{% endif %}
+{%- endmacro %}
+
+{% macro sheet_status(response, form) -%}
+  {% if form.sheet_id %}
+    {% if response.synced %}<span class="pill pill-live">Synced</span>
+    {% else %}<span class="pill pill-draft">{{ 'Needs attention' if response.sync_error else 'Pending sync' }}</span>{% endif %}
+  {% endif %}
+{%- endmacro %}

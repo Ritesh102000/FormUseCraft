@@ -27,3 +27,6 @@ dist/
 *.key
 *google_token*.json
 *client_secret*.json
+
+# Local browser verification artifacts may contain response data.
+.playwright-mcp/

@@ -974,3 +974,118 @@ def test_removed_private_ingestion_route_is_absent(monkeypatch):
     with TestClient(app) as client:
         for path in ("/login", "/admin/new", "/api/forms"):
             assert client.get(path).status_code == 404
+
+
+# ------------------------------------------------------- response browsing
+
+
+def test_response_browsing_search_sort_dates_and_pagination(admin_client):
+    from datetime import UTC, datetime, timedelta
+
+    form_id = repository.create_form(FormIn.model_validate(sample_form()))
+    form = repository.get_form(form_id=form_id)
+    name, email, platforms, score = [q["id"] for q in form["questions"]]
+    stamp = datetime(2026, 9, 1, tzinfo=UTC)
+    ids = []
+    for index in range(561):
+        rid = repository.save_response(form_id, {
+            name: f"Person {index:03}", email: "literal%_@example.com" if index == 0
+            else f"p{index}@example.com", platforms: ["IG", "YouTube"], score: index,
+        })
+        ids.append(rid)
+        with transaction() as conn:
+            conn.execute("UPDATE responses SET submitted_at = %s WHERE id = %s",
+                         (stamp + timedelta(hours=index), rid))
+    other = repository.create_form(FormIn.model_validate(sample_form(title="Other")))
+    repository.save_response(other, {name: "Must stay private to other form"})
+    path = f"/admin/{form_id}/responses"
+    first = admin_client.get(path)
+    assert first.status_code == 200
+    assert first.context["result"]["total"] == 561
+    assert len(first.context["responses"]) == 25
+    assert first.context["responses"][0]["id"] == ids[-1]
+    last = admin_client.get(path, params={"page": 999, "per_page": "25"})
+    assert last.context["result"]["page"] == 23
+    assert len(last.context["responses"]) == 11
+    ordered = admin_client.get(path, params={"sort": score, "direction": "asc"})
+    assert [r["payload"][score] for r in ordered.context["responses"]] == list(range(25))
+    numeric_desc = admin_client.get(path, params={"sort": score, "direction": "desc"})
+    assert numeric_desc.context["responses"][0]["payload"][score] == 560
+    text_order = admin_client.get(path, params={"sort": name, "direction": "asc"})
+    assert text_order.context["responses"][0]["id"] == ids[0]
+    searched = admin_client.get(path, params={"q": "LITERAL%_", "view": "cards"})
+    assert searched.context["result"]["matched"] == 1
+    assert searched.context["responses"][0]["id"] == ids[0]
+    assert "View full response" in searched.text
+    dates = admin_client.get(path, params={"date_from": "2026-09-02",
+                                          "date_to": "2026-09-02"})
+    assert dates.context["result"]["matched"] == 24
+    # Empty date controls are sent by every normal filter form submission.
+    blank_dates = admin_client.get(path, params={"date_from": "", "date_to": "",
+                                                "per_page": "50"})
+    assert blank_dates.status_code == 200
+    assert len(blank_dates.context["responses"]) == 50
+    no_match = admin_client.get(path, params={"q": "absent-value"})
+    assert "No matching responses" in no_match.text
+    assert "Ready for your first response" not in no_match.text
+    bad_range = admin_client.get(path, params={"date_from": "2026-09-03",
+                                              "date_to": "2026-09-01"})
+    assert "Choose a through date" in bad_range.text
+    injection = admin_client.get(path, params={"sort": "submitted_at; DROP TABLE forms",
+                                              "q": "' OR 1=1 --"})
+    assert injection.status_code == 200
+    assert injection.context["result"]["matched"] == 0
+    assert repository.get_form(form_id=form_id) is not None
+
+
+def test_response_details_history_escape_and_access(admin_client):
+    form_id = repository.create_form(FormIn.model_validate(sample_form()))
+    questions = repository.get_form(form_id=form_id)["questions"]
+    rid = repository.save_response(form_id, {
+        questions[0]["id"]: "<script>alert('untrusted')</script>",
+        questions[2]["id"]: ["IG", "YouTube"], questions[3]["id"]: 0,
+    })
+    with transaction() as conn:
+        conn.execute("UPDATE questions SET archived = TRUE WHERE id = %s",
+                     (questions[0]["id"],))
+    path = f"/admin/{form_id}/responses/{rid}"
+    response = admin_client.get(path, params={"q": "IG", "view": "cards", "page": 2})
+    assert response.status_code == 200
+    assert "Removed field" in response.text
+    assert "&lt;script&gt;" in response.text
+    assert "<script>alert" not in response.text
+    assert "IG, YouTube" in response.text
+    assert "No answer" in response.text
+    assert "q=IG&amp;view=cards&amp;page=2" in response.text
+    from datetime import UTC
+
+    utc_stamp = repository.get_response(form_id, rid)["submitted_at"].astimezone(UTC)
+    assert utc_stamp.strftime('%d %b %Y at %H:%M:%S') in response.text
+    search_archived = admin_client.get(f"/admin/{form_id}/responses", params={"q": "untrusted"})
+    assert search_archived.context["result"]["matched"] == 1
+    other = repository.create_form(FormIn.model_validate(sample_form(title="Other")))
+    assert admin_client.get(f"/admin/{other}/responses/{rid}").status_code == 404
+    assert admin_client.get(f"/admin/{form_id}/responses/missing").status_code == 404
+    admin_client.cookies.clear()
+    assert admin_client.get(path, follow_redirects=False).status_code == 302
+    assert admin_client.get(f"/admin/{form_id}/responses", follow_redirects=False).status_code == 302
+
+
+def test_response_sync_filter_and_stable_paging(admin_client):
+    form_id = repository.create_form(FormIn.model_validate(sample_form()))
+    ids = [repository.save_response(form_id, {}) for _ in range(52)]
+    repository.mark_synced(ids[0])
+    path = f"/admin/{form_id}/responses"
+    # A database-only form never claims that a no-op provider sync is meaningful.
+    assert admin_client.get(path, params={"sync": "synced"}).context["result"]["matched"] == 52
+    with transaction() as conn:
+        conn.execute("UPDATE forms SET sheet_id = 'test-sheet' WHERE id = %s", (form_id,))
+        conn.execute("UPDATE responses SET submitted_at = '2026-09-01T00:00:00Z' "
+                     "WHERE form_id = %s", (form_id,))
+    assert admin_client.get(path, params={"sync": "synced"}).context["result"]["matched"] == 1
+    assert admin_client.get(path, params={"sync": "pending"}).context["result"]["matched"] == 51
+    seen = []
+    for page in range(1, 4):
+        res = admin_client.get(path, params={"page": page})
+        seen.extend(r["id"] for r in res.context["responses"])
+    assert len(seen) == len(set(seen)) == 52

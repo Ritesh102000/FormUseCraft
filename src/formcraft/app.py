@@ -12,12 +12,12 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
-from datetime import UTC, datetime
-from typing import Any
-from urllib.parse import unquote, urlsplit
+from datetime import UTC, date, datetime, time, timedelta
+from typing import Any, Literal
+from urllib.parse import unquote, urlencode, urlsplit
 
 import psycopg
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.responses import (
     HTMLResponse,
     JSONResponse,
@@ -35,6 +35,7 @@ from .models import QUESTION_TYPES, FormIn, validate_answer
 log = logging.getLogger("formcraft")
 
 templates = Jinja2Templates(directory=str(settings.web_dir / "templates"))
+templates.env.filters["utc"] = lambda value: value.astimezone(UTC)
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
 
@@ -70,11 +71,12 @@ def create_app() -> FastAPI:
     )
     ai.register(app, _render, _require_local, _sheet_after_save, settings.role)
     _register_public(app)
-    if settings.is_hosted_role:
+    if settings.uses_browser_google:
         from . import hosted
 
         hosted.register(
-            app, _render, lambda form_id: _sheet_after_save(form_id, create=True)
+            app, _render, lambda form_id: _sheet_after_save(form_id, create=True),
+            local_check=None if settings.is_hosted_role else _require_local,
         )
     if settings.is_admin_role:
         _register_admin(app)
@@ -101,12 +103,17 @@ def _require_local(request: Request) -> None:
 
 def _render(request: Request, template: str, **context: Any) -> HTMLResponse:
     """Every template gets the brand and the image-slot registry for free."""
+    if template == "builder.html" and settings.uses_browser_google:
+        from .google_connection import summary
+
+        context["google_owner"] = summary()
     return templates.TemplateResponse(
         request=request,
         name=template,
         context={
             "brand_name": settings.brand_name,
             "hosted": settings.is_hosted_role,
+            "browser_google": settings.uses_browser_google,
             "ai_voice_available": ai.voice_available(),
             "owner_name": settings.owner_name,
             "owner_role": settings.owner_role,
@@ -235,19 +242,82 @@ def _register_admin(app: FastAPI) -> None:  # noqa: C901 - route table, flat by 
         response_class=HTMLResponse,
         dependencies=[local],
     )
-    def responses_page(request: Request, form_id: str) -> Response:
+    def responses_page(
+        request: Request, form_id: str, q: str = Query("", max_length=200),
+        date_from: str = Query("", max_length=10),
+        date_to: str = Query("", max_length=10),
+        sync: Literal["all", "synced", "pending"] = "all",
+        sort: str = Query("submitted_at", max_length=80),
+        direction: Literal["asc", "desc"] = "desc",
+        view: Literal["table", "cards"] = "table",
+        page: int = Query(1, ge=1, le=1_000_000),
+        per_page: int = Query(25, ge=25, le=100),
+    ) -> Response:
         if not auth.read_session(request):
             return RedirectResponse("/login", status_code=302)
         form = repository.get_form(form_id=form_id)
         if form is None:
             raise HTTPException(status_code=404, detail="Form not found")
+        try:
+            from_day = date.fromisoformat(date_from) if date_from else None
+            to_day = date.fromisoformat(date_to) if date_to else None
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422, detail="Use dates in YYYY-MM-DD format."
+            ) from exc
+        per_page = per_page if per_page in {25, 50, 100} else 25
+        questions = repository.all_questions(form_id)
+        if sort not in {question["id"] for question in questions}:
+            sort = "submitted_at"
+        if not form["sheet_id"]:
+            sync = "all"
+        result = repository.browse_responses(
+            form_id, search=q.strip(),
+            start=datetime.combine(from_day, time.min, UTC) if from_day else None,
+            end=(datetime.combine(to_day + timedelta(days=1), time.min, UTC)
+                 if to_day and to_day < date.max else None),
+            sync=sync, sort=sort, direction=direction, page=page, per_page=per_page,
+        )
+        filters = {"q": q.strip(), "date_from": str(date_from or ""),
+                   "date_to": str(date_to or ""), "sync": sync, "sort": sort,
+                   "direction": direction, "view": view, "per_page": per_page}
+
+        def browse_url(**changes):
+            return f"/admin/{form_id}/responses?" + urlencode(
+                {**filters, "page": result["page"], **changes}
+            )
+
         return _render(
             request,
             "responses.html",
             form=form,
-            responses=repository.list_responses(form_id),
+            responses=result["rows"], result=result, filters=filters,
+            questions=questions,
+            preview_questions=[question for question in questions
+                               if not question["archived"]
+                               and not question["config"].get("hidden")][:4],
+            browse_url=browse_url,
+            detail_query=urlencode({**filters, "page": result["page"]}),
+            date_error=bool(from_day and to_day and from_day > to_day),
             base_url=settings.base_url,
             google=sheets.status_summary(form),
+        )
+
+    @app.get("/admin/{form_id}/responses/{response_id}",
+             response_class=HTMLResponse, dependencies=[local])
+    def response_detail(request: Request, form_id: str, response_id: str) -> Response:
+        if not auth.read_session(request):
+            return RedirectResponse("/login", status_code=302)
+        form = repository.get_form(form_id=form_id)
+        response = repository.get_response(form_id, response_id)
+        if form is None or response is None:
+            raise HTTPException(status_code=404, detail="Response not found")
+        questions = repository.all_questions(form_id)
+        return _render(
+            request, "response_detail.html", form=form, response=response,
+            questions=[q for q in questions if not q["config"].get("hidden")],
+            hidden_questions=[q for q in questions if q["config"].get("hidden")],
+            back_url=f"/admin/{form_id}/responses?{request.url.query}",
         )
 
     # --------------------------------------------------------------- export
@@ -1250,7 +1320,11 @@ def _attach_sheet(
 ) -> dict[str, Any]:
     """Create the spreadsheet for a form. Never fatal — the form still works."""
     if not sheets.enabled():
-        return {"created": False, "detail": "Google sync is off."}
+        return {
+            "created": False, "status": "not_connected",
+            "detail": "Your form is saved. Connect Google Sheets to sync responses, "
+                      "or continue using database storage only.",
+        }
 
     form = repository.get_form(form_id=form_id)
     if form is None:

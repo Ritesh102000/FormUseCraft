@@ -15,16 +15,17 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
 {% if result == 'disconnected' %}<p class="alert alert-warn">Google disconnected from this installation. Forms still collect responses in the database. Sheets sync and native booking are paused.</p>{% endif %}
 {% if result == 'cancelled' %}<p class="alert alert-warn">Connection cancelled. Your previous connection was preserved.</p>{% endif %}
 {% if result == 'failed' %}<p class="alert alert-error">Google could not be connected. Check the redirect URL, enabled APIs, and requested permissions, then try again. Reconnect the same Google account if existing forms use its Sheets or Calendar.</p>{% endif %}
+<p class="muted">Use a regular browser such as Chrome or Safari for Google sign-in; Google may reject embedded browsers.</p>
 <div class="card stack" style="padding:var(--sp-6);max-width:760px">
 <h2>{{ 'Connected to ' ~ connection.email if connection.connected else 'Connect your Google account' }}</h2>
 <p class="muted">Sheets creates a spreadsheet for each form. Calendar access adds availability checks, meeting invitations, and Google Meet links on meeting forms.</p>
 {% if not configured %}
-<div class="alert alert-warn">One-time setup: add your own Google Web application OAuth client to this deployment, then redeploy. No Google account is bundled with the project.</div>
+<div class="alert alert-warn">One-time setup: add your own Google Web application OAuth client to this installation, then {{ "redeploy" if hosted else "restart the local app" }}. No Google account is bundled with the project.</div>
 <ol class="stack">
 <li>Open <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>. Enable Google Drive and Sheets APIs. Enable Calendar API if you want meetings.</li>
 <li>Configure the OAuth consent screen and create a <strong>Web application</strong> OAuth client.</li>
 <li>Add this exact authorized redirect URI:<br><code>{{ callback_url }}</code></li>
-<li>In Vercel's Production environment variables, set <code>FORMCRAFT_GOOGLE_CLIENT_ID</code> and <code>FORMCRAFT_GOOGLE_CLIENT_SECRET</code> from that client. Redeploy, then return here.</li>
+<li>{% if hosted %}In Vercel's Production environment variables{% else %}In this project's ignored <code>.env</code> file{% endif %}, set <code>FORMCRAFT_GOOGLE_CLIENT_ID</code> and <code>FORMCRAFT_GOOGLE_CLIENT_SECRET</code> from that client. {{ "Redeploy" if hosted else "Restart the local app" }}, then return here.</li>
 </ol>
 {% else %}
 <p class="muted small">Authorized redirect URI: <code>{{ callback_url }}</code></p>

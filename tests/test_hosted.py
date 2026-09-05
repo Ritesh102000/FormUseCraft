@@ -200,7 +200,12 @@ def test_oauth_state_bound_to_login_session_and_expiry(site):
 def test_google_account_switch_cannot_retarget_existing_sheets(site, monkeypatch):
     login(site)
     assert connect(site, monkeypatch)[0].headers["location"].endswith("connected")
-    form_id = repository.create_form(FormIn(title="Survey", sections=[{"questions": [{"type": "short_text", "label": "Name"}]}]))
+    form_id = repository.create_form(
+        FormIn(
+            title="Survey",
+            sections=[{"questions": [{"type": "short_text", "label": "Name"}]}],
+        )
+    )
     repository.set_sheet(
         form_id, "existing-sheet", "https://docs.google.com/existing-sheet"
     )
@@ -255,9 +260,14 @@ def test_meeting_wizard_creates_draft_and_keeps_google_optional(site, monkeypatc
     login(site)
     assert "Connect Google Sheets + Calendar" in site.get("/admin/new-meeting").text
     connect(site, monkeypatch, calendar=True)
-    monkeypatch.setattr(sheets, "create_spreadsheet", lambda form: (
-        "wizard-sheet", "https://docs.google.com/spreadsheets/d/wizard-sheet/edit"
-    ))
+    monkeypatch.setattr(
+        sheets,
+        "create_spreadsheet",
+        lambda form: (
+            "wizard-sheet",
+            "https://docs.google.com/spreadsheets/d/wizard-sheet/edit",
+        ),
+    )
     fields = {
         "title": "Meet our team",
         "timezone": "Europe/London",
@@ -377,3 +387,191 @@ def test_exchange_verifies_nonce_and_permissions(site, monkeypatch):
     assert identity["sub"] == "owner" and payload["refresh_token"]
     with pytest.raises(ValueError, match="identity"):
         google_connection.exchange("synthetic-code", {**data, "nonce": "wrong"})
+
+
+@pytest.fixture
+def local_google_site(site, monkeypatch):
+    from formcraft import ai
+
+    local_settings = replace(
+        config.settings,
+        role="admin",
+        local_browser_google=True,
+        base_url="http://127.0.0.1:8480",
+        secure_cookies=False,
+        admin_allow_remote=False,
+        serverless=False,
+        google_enabled=False,
+    )
+    for module in (
+        config,
+        app,
+        auth,
+        db,
+        sheets,
+        calendar_booking,
+        hosted,
+        google_connection,
+        ai,
+    ):
+        monkeypatch.setattr(module, "settings", local_settings)
+    with TestClient(app.create_app(), base_url=local_settings.base_url) as client:
+        yield client
+
+
+def local_login(client):
+    response = client.post(
+        "/login",
+        data={"username": "admin", "password": PASSWORD},
+        headers={"Origin": "http://127.0.0.1:8480"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+
+def test_local_google_setup_and_saved_form_prompt(local_google_site, monkeypatch):
+    client = local_google_site
+    local_login(client)
+    monkeypatch.setattr(
+        google_connection,
+        "settings",
+        replace(
+            google_connection.settings, google_client_id="", google_client_secret=""
+        ),
+    )
+    page = client.get("/admin/integrations")
+    assert page.status_code == 200
+    assert "http://127.0.0.1:8480/oauth/google/callback" in page.text
+    assert (
+        "Restart the local app" in page.text
+        and "ignored <code>.env</code>" in page.text
+    )
+    builder = client.get("/admin/new")
+    assert "Connect Google Sheets / Calendar" in builder.text
+    response = client.post(
+        "/api/forms",
+        headers={"Origin": "http://127.0.0.1:8480"},
+        json={
+            "title": "Local form",
+            "sections": [{"questions": [{"type": "short_text", "label": "Name"}]}],
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["sheet"]["status"] == "not_connected"
+    form_id = response.json()["id"]
+    saved = client.get(f"/admin/{form_id}?setup=google")
+    assert "data-open-google-setup" in saved.text
+    assert "Use app database only" in saved.text
+    assert repository.get_form(form_id=form_id)["title"] == "Local form"
+    assert "Connect Google Sheets + Calendar" in client.get("/admin/new-meeting").text
+
+
+def test_local_browser_oauth_uses_encrypted_grant_for_sheets_and_calendar(
+    local_google_site, monkeypatch
+):
+    client = local_google_site
+    local_login(client)
+    response = client.post(
+        "/oauth/google/start",
+        data={"calendar": "1"},
+        headers={"Origin": "http://127.0.0.1:8480"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    query = parse_qs(urlsplit(response.headers["location"]).query)
+    assert query["redirect_uri"] == ["http://127.0.0.1:8480/oauth/google/callback"]
+    payload = {
+        "refresh_token": "synthetic-local-refresh",
+        "token": "synthetic-local-access",
+        "client_id": "synthetic-client",
+        "client_secret": "synthetic-secret",
+        "scopes": google_connection.SHEETS_SCOPES + google_connection.CALENDAR_SCOPES,
+    }
+    monkeypatch.setattr(
+        google_connection,
+        "exchange",
+        lambda *args: ({"sub": "local-owner", "email": "local@example.com"}, payload),
+    )
+    response = client.get(
+        "/oauth/google/callback",
+        params={"code": "synthetic-code", "state": query["state"][0]},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert sheets.enabled()  # The legacy GOOGLE_ENABLED switch remains false.
+    assert sheets.token_payload("booking")["refresh_token"] == payload["refresh_token"]
+    assert google_connection.summary()["calendar"]
+    with db.readonly() as conn:
+        stored = conn.execute(
+            "SELECT encrypted_token FROM google_connection"
+        ).fetchone()["encrypted_token"]
+    assert payload["refresh_token"] not in stored
+    monkeypatch.setattr(
+        sheets,
+        "create_spreadsheet",
+        lambda form: (
+            "synthetic-sheet",
+            "https://docs.google.com/spreadsheets/d/synthetic-sheet",
+        ),
+    )
+    response = client.post(
+        "/api/forms",
+        headers={"Origin": "http://127.0.0.1:8480"},
+        json={
+            "title": "Local connected form",
+            "sections": [{"questions": [{"type": "short_text", "label": "Name"}]}],
+        },
+    )
+    assert response.status_code == 201
+    form_id = response.json()["id"]
+    assert repository.get_form(form_id=form_id)["sheet_id"] == "synthetic-sheet"
+    assert "Open this form's Sheet" in client.get(f"/admin/{form_id}").text
+
+
+def test_local_browser_google_routes_reject_remote_peers_and_wrong_origin(
+    local_google_site,
+):
+    client = local_google_site
+    local_login(client)
+    assert (
+        client.post(
+            "/oauth/google/start", headers={"Origin": "https://untrusted.example"}
+        ).status_code
+        == 403
+    )
+    with TestClient(
+        app.create_app(),
+        base_url="http://127.0.0.1:8480",
+        client=("203.0.113.25", 40000),
+    ) as remote:
+        assert remote.get("/admin/integrations").status_code == 404
+        assert remote.get("/admin/new-meeting").status_code == 404
+        assert remote.get("/oauth/google/callback").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"base_url": "http://external.example"},
+        {"admin_allow_remote": True},
+        {"serverless": True},
+        {"secret_key": "short"},
+    ],
+)
+def test_local_browser_google_does_not_weaken_hosted_security(
+    local_google_site, monkeypatch, changes
+):
+    monkeypatch.setattr(config, "settings", replace(config.settings, **changes))
+    with pytest.raises(RuntimeError, match="local-only admin access"):
+        config.validate_hosted_settings()
+
+
+
+def test_owner_forms_preserve_origin_without_accepting_null(site):
+    client = site
+    page = client.get("/login")
+    assert page.headers["referrer-policy"] == "same-origin"
+    rejected = client.post("/login", data={"username": "admin", "password": PASSWORD},
+                           headers={"Origin": "null"})
+    assert rejected.status_code == 403
+    login(client)

@@ -55,7 +55,7 @@ class SheetsUnavailable(RuntimeError):
 
 
 def enabled() -> bool:
-    if settings.is_hosted_role:
+    if settings.uses_browser_google:
         from .google_connection import summary
 
         return summary()["connected"]
@@ -96,7 +96,7 @@ def _column_letter(index: int) -> str:
 
 def _load_service(profile: str = "default") -> Any:
     with _lock:
-        if not settings.is_hosted_role and profile in _services:
+        if not settings.uses_browser_google and profile in _services:
             return _services[profile]
 
         from google.auth.transport.requests import Request
@@ -116,13 +116,13 @@ def _load_service(profile: str = "default") -> Any:
         creds = Credentials.from_authorized_user_info(
             payload,
             payload.get("scopes")
-            if settings.is_hosted_role
+            if settings.uses_browser_google
             else scopes_for_profile(profile),
         )
         if not creds.valid:
             if creds.expired and creds.refresh_token:
                 creds.refresh(Request())
-                if settings.is_hosted_role:
+                if settings.uses_browser_google:
                     from .google_connection import persist_refresh
 
                     persist_refresh(payload, json.loads(creds.to_json()))
@@ -130,7 +130,7 @@ def _load_service(profile: str = "default") -> Any:
                 # is enough, the refresh token itself does not change.
                 token_file = _profile_file(profile)
                 if (
-                    not settings.is_hosted_role
+                    not settings.uses_browser_google
                     and not settings.serverless
                     and token_file.exists()
                 ):
@@ -143,7 +143,7 @@ def _load_service(profile: str = "default") -> Any:
                 )
 
         service = build("sheets", "v4", credentials=creds, cache_discovery=False)
-        if not settings.is_hosted_role:
+        if not settings.uses_browser_google:
             _services[profile] = service
         return service
 
@@ -541,7 +541,7 @@ def status_summary(form: dict[str, Any] | None = None) -> dict[str, Any]:
 
 def _token_source(profile: str = "default") -> dict[str, Any] | None:
     """Env var first (Vercel), then the local file (your Mac)."""
-    if settings.is_hosted_role:
+    if settings.uses_browser_google:
         from .google_connection import token_payload
 
         return token_payload()

@@ -9,6 +9,7 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
 
 {% extends "base.html" %}
 {% from "components/ui.html" import media %}
+{% from "components/response_values.html" import answer, sheet_status %}
 {% block title %}{{ form.title }} — responses{% endblock %}
 
 {% block content %}
@@ -16,12 +17,12 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
   <div>
     <p class="eyebrow"><a href="/admin/{{ form.id }}">{{ form.title }}</a></p>
     <h1 class="display">Responses</h1>
-    <p class="muted small">{{ responses|length }} response{{ '' if responses|length == 1 else 's' }}</p>
+    <p class="muted small">{{ result.total }} response{{ '' if result.total == 1 else 's' }} saved in PostgreSQL</p>
   </div>
   <div class="head-actions">
     <a class="btn btn-sm" href="/admin/{{ form.id }}">Edit form</a>
-    <a class="btn btn-sm" href="/admin/{{ form.id }}/export.csv">CSV</a>
-    <a class="btn btn-primary btn-sm" href="/admin/{{ form.id }}/export.xlsx">Download Excel</a>
+    <a class="btn btn-sm" href="/admin/{{ form.id }}/export.csv">Export CSV</a>
+    <a class="btn btn-primary btn-sm" href="/admin/{{ form.id }}/export.xlsx">Export Excel</a>
     {% if form.sheet_url %}
     <a class="btn btn-sm btn-ghost" href="{{ form.sheet_url }}" target="_blank" rel="noopener">Sheet ↗</a>
     {% elif google.enabled %}
@@ -32,7 +33,7 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
   </div>
 </div>
 
-{% if not hosted %}
+{% if not browser_google %}
 <details class="card feed-card" {% if form.export_key %}open{% endif %}>
   <summary><strong>Live link for Excel or Numbers</strong>
     <span class="muted small">— refresh in place instead of re-downloading</span>
@@ -60,48 +61,101 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
 </details>
 {% endif %}
 
-{% if not responses %}
+<div class="response-storage small">
+  <span class="pill pill-live">Database storage</span>
+  <span>Every submission is saved here first. Google Sheets is an optional copy.</span>
+  <span class="muted">Exports include up to 10,000 latest responses, regardless of filters.</span>
+</div>
+
+{% if result.total %}
+<form method="get" class="card response-filters" aria-label="Search and filter responses">
+  <input type="hidden" name="view" value="{{ filters.view }}">
+  <label class="field-row response-search"><span>Search answers or response ID</span>
+    <input class="input" type="search" name="q" value="{{ filters.q }}" maxlength="200" placeholder="Search all submissions…">
+  </label>
+  <div class="head-actions response-filter-actions"><button class="btn btn-primary" type="submit">Apply filters</button><a class="btn btn-ghost" href="/admin/{{ form.id }}/responses?view={{ filters.view }}">Reset</a></div>
+  <details class="response-filter-options" open>
+    <summary>Sort &amp; filters <span class="muted small">· {{ 'Ascending' if filters.direction == 'asc' else 'Descending' }}{% if filters.date_from or filters.date_to %} · Date range applied{% endif %}{% if filters.sync != 'all' %} · {{ filters.sync }}{% endif %}</span></summary>
+    <div class="response-filter-grid">
+  <label class="field-row"><span>From date (UTC)</span><input type="date" name="date_from" value="{{ filters.date_from }}"></label>
+  <label class="field-row"><span>Through date (UTC)</span><input type="date" name="date_to" value="{{ filters.date_to }}"></label>
+  <label class="field-row"><span>Sort by</span><select name="sort">
+    <option value="submitted_at" {{ 'selected' if filters.sort == 'submitted_at' else '' }}>Submitted time</option>
+    {% for question in questions %}<option value="{{ question.id }}" {{ 'selected' if filters.sort == question.id else '' }}>{{ question.label }}{{ ' (removed)' if question.archived else '' }}</option>{% endfor %}
+  </select></label>
+  <label class="field-row"><span>Order</span><select name="direction">
+    <option value="desc" {{ 'selected' if filters.direction == 'desc' else '' }}>Descending ↓</option>
+    <option value="asc" {{ 'selected' if filters.direction == 'asc' else '' }}>Ascending ↑</option>
+  </select></label>
+  {% if form.sheet_id %}<label class="field-row"><span>Google Sheets</span><select name="sync">
+    <option value="all" {{ 'selected' if filters.sync == 'all' else '' }}>All sync states</option>
+    <option value="synced" {{ 'selected' if filters.sync == 'synced' else '' }}>Synced</option>
+    <option value="pending" {{ 'selected' if filters.sync == 'pending' else '' }}>Pending / needs attention</option>
+  </select></label>{% endif %}
+  <label class="field-row"><span>Per page</span><select name="per_page">
+    {% for size in [25, 50, 100] %}<option value="{{ size }}" {{ 'selected' if filters.per_page == size else '' }}>{{ size }} responses</option>{% endfor %}
+  </select></label>
+    </div>
+  </details>
+  {% if date_error %}<p class="alert alert-error" role="alert">Choose a through date on or after the from date.</p>{% endif %}
+</form>
+<div class="section-title-row response-results-head">
+  <p class="muted small" role="status">Showing {{ result.first }}–{{ result.last }} of {{ result.matched }} matching responses · Times in UTC</p>
+  <nav class="head-actions" aria-label="Response display">
+    <a class="btn btn-sm {{ 'btn-primary' if filters.view == 'table' else '' }}" href="{{ browse_url(view='table') }}" {{ 'aria-current=page' if filters.view == 'table' else '' }}>Table view</a>
+    <a class="btn btn-sm {{ 'btn-primary' if filters.view == 'cards' else '' }}" href="{{ browse_url(view='cards') }}" {{ 'aria-current=page' if filters.view == 'cards' else '' }}>Card view</a>
+  </nav>
+</div>
+{% endif %}
+
+{% if not result.total %}
 <div class="empty">
   {{ media("responses-empty", slots, media_url) }}
-  <h2>Nothing yet</h2>
+  <h2>Ready for your first response</h2>
   <p class="muted">Share <code>{{ base_url }}/f/{{ form.public_ref }}</code> to start collecting.</p>
+  <p class="muted small">Responses appear here automatically. No Google connection needed.</p>
+</div>
+{% elif not responses %}
+<div class="empty card"><h2>No matching responses</h2><p class="muted">Try a different search or widen the date range.</p><a class="btn" href="/admin/{{ form.id }}/responses?view={{ filters.view }}">Clear filters</a></div>
+{% elif filters.view == 'cards' %}
+<div class="response-card-grid">
+  {% for r in responses %}
+  <article class="card response-card">
+    <div class="section-title-row"><h2><a href="/admin/{{ form.id }}/responses/{{ r.id }}?{{ detail_query }}">{{ (r.submitted_at | utc).strftime('%d %b %Y, %H:%M') }}</a></h2>{{ sheet_status(r, form) }}</div>
+    <dl class="response-answers response-preview">{% for question in preview_questions %}<div><dt>{{ question.label }}</dt><dd>{{ answer(r.payload.get(question.id)) }}</dd></div>{% endfor %}</dl>
+    <a class="btn btn-sm" href="/admin/{{ form.id }}/responses/{{ r.id }}?{{ detail_query }}">View full response</a>
+  </article>
+  {% endfor %}
 </div>
 {% else %}
-<div class="table-scroll">
+<div class="table-scroll response-table" tabindex="0" role="region" aria-label="Responses table, scroll horizontally for more columns">
   <table class="data">
-    <thead>
-      <tr>
-        <th>Submitted</th>
-        {% for q in form.questions %}<th>{{ q.label }}</th>{% endfor %}
-        {% if form.sheet_id %}<th>Sheet</th>{% endif %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in responses %}
-      <tr>
-        <td class="nowrap muted">{{ r.submitted_at.strftime('%d %b %Y, %H:%M') }}</td>
-        {% for q in form.questions %}
-        {% set v = r.payload.get(q.id) %}
-        <td>{% if v is iterable and v is not string %}{{ v | join(', ') }}{% elif v is not none %}{{ v }}{% endif %}</td>
-        {% endfor %}
-        {% if form.sheet_id %}
-        <td>
-          {# Only meaningful when a spreadsheet is actually linked — otherwise
-             `synced` just means "nothing to do", which reads as a false claim. #}
-          {% if r.synced %}<span class="pill pill-live"><span class="dot"></span>Synced</span>
-          {% else %}<span class="pill pill-draft" title="{{ r.sync_error or 'Pending' }}"><span class="dot"></span>Pending</span>{% endif %}
-        </td>
-        {% endif %}
-      </tr>
-      {% endfor %}
-    </tbody>
+    <caption class="response-table-caption">First {{ preview_questions|length }} fields · Open a response for every answer, including removed fields.</caption>
+    <thead><tr><th scope="col">Submitted (UTC)</th>{% for question in preview_questions %}<th scope="col">{{ question.label }}</th>{% endfor %}{% if form.sheet_id %}<th scope="col">Sheet</th>{% endif %}<th scope="col">Details</th></tr></thead>
+    <tbody>{% for r in responses %}<tr>
+      <td class="nowrap"><a href="/admin/{{ form.id }}/responses/{{ r.id }}?{{ detail_query }}">{{ (r.submitted_at | utc).strftime('%d %b %Y, %H:%M') }}</a></td>
+      {% for question in preview_questions %}<td><div class="response-cell">{{ answer(r.payload.get(question.id)) }}</div></td>{% endfor %}
+      {% if form.sheet_id %}<td>{{ sheet_status(r, form) }}</td>{% endif %}
+      <td><a class="btn btn-sm" href="/admin/{{ form.id }}/responses/{{ r.id }}?{{ detail_query }}" aria-label="View response {{ r.id }}">View</a></td>
+    </tr>{% endfor %}</tbody>
   </table>
 </div>
+{% endif %}
+{% if responses %}
+<nav class="response-pagination" aria-label="Response pages">
+  {% if result.page > 1 %}<a class="btn btn-sm" rel="prev" href="{{ browse_url(page=result.page - 1) }}">← Previous</a>{% else %}<button class="btn btn-sm" disabled>← Previous</button>{% endif %}
+  <span class="small">Page {{ result.page }} of {{ result.pages }}</span>
+  {% if result.page < result.pages %}<a class="btn btn-sm" rel="next" href="{{ browse_url(page=result.page + 1) }}">Next →</a>{% else %}<button class="btn btn-sm" disabled>Next →</button>{% endif %}
+</nav>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Keep responses within reach on phones; filters remain keyboard accessible.
+if (window.matchMedia('(max-width: 600px)').matches) {
+  document.querySelector('.response-filter-options')?.removeAttribute('open');
+}
 document.getElementById('link-sheet')?.addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;

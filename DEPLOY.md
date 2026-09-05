@@ -127,6 +127,10 @@ authorized redirect URIs. Sign in and reconnect Google on that canonical domain.
 Use the canonical domain for the owner dashboard: owner mutations from another
 origin are rejected. Share links generated thereafter use the configured domain.
 
+The local `scripts/dev.py` launcher also exposes the Google setup page using
+a loopback callback and stable local encryption secret. See the
+[local Google guide](docs/GOOGLE_SHEETS.md#local-browser-setup).
+
 ## Acceptance checks
 
 1. Signed out, `/` redirects to login and protected exports return 401. Admin

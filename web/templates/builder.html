@@ -25,12 +25,14 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
     <span id="save-state" class="save-state"></span>
     {% if form %}
     <a class="btn btn-sm" href="/admin/{{ form.id }}/responses">Responses</a>
-    {% if hosted and form.booking_mode == 'google_api' %}<a class="btn btn-sm" href="/admin/{{ form.id }}/booking">Meeting settings</a>{% endif %}
+    {% if browser_google and form.booking_mode == 'google_api' %}<a class="btn btn-sm" href="/admin/{{ form.id }}/booking">Meeting settings</a>{% endif %}
     <button class="btn btn-sm btn-danger" id="delete-form">Delete</button>
     {% endif %}
     <button class="btn btn-primary" id="save-form">Save</button>
   </div>
 </div>
+
+{% include "components/google_setup.html" %}
 
 <div id="builder-feedback"
      class="alert {{ 'alert-error' if form and form.sheet_error else '' }} builder-feedback"

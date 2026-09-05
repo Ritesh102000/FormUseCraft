@@ -292,9 +292,28 @@ uv run python scripts/dev.py
 Open `http://127.0.0.1:8480` and use `admin` / `devpassword` only for this disposable
 development instance. The embedded PostgreSQL database lives in ignored
 `data/devdb` on supported macOS/Linux systems. Do not expose this demo publicly.
-It uses local-admin mode, not hosted browser OAuth. For your own local PostgreSQL,
+It uses local-admin mode with browser Google setup. Open **Google integrations**
+and configure a Web OAuth client using the displayed localhost callback. Its
+installation secret persists in ignored `data/dev_secret.key`; keep that file
+private and stable. For your own local PostgreSQL,
 follow the alternate setup in [README.md](README.md).
 
 For code changes, run the verification commands in [AGENTS.md](AGENTS.md), using
 only disposable test databases. The optional local-admin/public split is an
 advanced deployment choice; it is not required for the normal hosted dashboard.
+
+
+## Review stored responses
+
+PostgreSQL is required and is the primary storage even when Google is connected.
+The local demo stores data in `data/devdb`; Vercel needs the installation owner's
+hosted PostgreSQL URL. Do not use Vercel's temporary filesystem for responses.
+
+From the dashboard, choose a form's **Responses**. Search answers or IDs, filter
+by UTC dates (through date is inclusive), and sort by submitted time or a field.
+Numeric fields sort by value; blank answers stay last. Apply filters to search the
+whole form, then use 25/50/100-item pages and switch between **Table view** and
+**Card view**. **View** opens all answers, including removed fields, with a link
+back to the same filters. Hidden form metadata is in a separate expandable area.
+Sheets sync filters appear only for forms with a linked Sheet. CSV/Excel exports
+retain their existing scope: up to 10,000 latest responses, independent of filters.

@@ -81,7 +81,8 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ draft, meeting: $('ai-meeting').checked }),
       });
-      window.location.assign(`/admin/${encodeURIComponent(data.id)}`);
+      const setup = data.integration_needed ? '?setup=google' : '';
+      window.location.assign(`/admin/${encodeURIComponent(data.id)}${setup}`);
     } catch (err) { $('ai-status').textContent = err.message; setBusy(false); }
   });
   $('ai-reset').addEventListener('click', () => {

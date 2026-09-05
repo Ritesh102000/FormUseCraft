@@ -59,6 +59,7 @@ class Settings:
     admin_password: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
+    local_browser_google: bool = False
     openai_api_key: str = ""
     ai_model: str = "gpt-4.1-mini"
     ai_transcribe_model: str = "gpt-4o-mini-transcribe"
@@ -67,6 +68,12 @@ class Settings:
     @property
     def is_hosted_role(self) -> bool:
         return self.role == "hosted"
+
+    @property
+    def uses_browser_google(self) -> bool:
+        return self.is_hosted_role or (
+            self.role == "admin" and self.local_browser_google
+        )
 
     @property
     def is_admin_role(self) -> bool:
@@ -136,6 +143,7 @@ def load_settings() -> Settings:
             "FORMCRAFT_SECURE_COOKIES", "1" if role == "hosted" else "0"
         ),
         google_enabled=_flag("FORMCRAFT_GOOGLE_ENABLED"),
+        local_browser_google=_flag("FORMCRAFT_LOCAL_BROWSER_GOOGLE"),
         google_client_secret_file=_path(
             "FORMCRAFT_GOOGLE_CLIENT_SECRET_FILE", "data/google_client_secret.json"
         ),
@@ -174,6 +182,24 @@ def validate_hosted_settings() -> None:
     from urllib.parse import urlsplit
 
     if not settings.is_hosted_role:
+        if settings.uses_browser_google:
+            url = urlsplit(settings.base_url)
+            if (
+                url.scheme not in {"http", "https"}
+                or url.hostname not in {"localhost", "127.0.0.1", "::1"}
+                or url.username
+                or url.password
+                or url.query
+                or url.fragment
+                or url.path not in {"", "/"}
+                or len(settings.secret_key) < 32
+                or settings.admin_allow_remote
+                or settings.serverless
+            ):
+                raise RuntimeError(
+                    "Local browser Google setup requires a loopback origin, "
+                    "a strong secret, and local-only admin access."
+                )
         return
     url = urlsplit(settings.base_url)
     if (
