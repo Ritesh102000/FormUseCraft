@@ -20,6 +20,7 @@ const els = {
   meetingUrl: document.getElementById('f-meeting-url'),
   meetingLabel: document.getElementById('f-meeting-label'),
   published: document.getElementById('f-published'),
+  voice: document.getElementById('f-ai-voice'),
   sections: document.getElementById('sections'),
   addSection: document.getElementById('add-section'),
   save: document.getElementById('save-form'),
@@ -36,6 +37,7 @@ let state = window.FORM_DATA
       display_mode: window.FORM_DATA.display_mode,
       accent: window.FORM_DATA.accent,
       is_published: window.FORM_DATA.is_published,
+      ai_voice_enabled: Boolean(window.FORM_DATA.ai_voice_enabled),
       confirm_msg: window.FORM_DATA.confirm_msg,
       meeting_url: window.FORM_DATA.meeting_url,
       meeting_label: window.FORM_DATA.meeting_label,
@@ -61,6 +63,7 @@ let state = window.FORM_DATA
       display_mode: 'single',
       accent: '#4f46e5',
       is_published: false,
+      ai_voice_enabled: false,
       confirm_msg: 'Thanks — your response has been recorded.',
       meeting_url: '',
       meeting_label: 'Book a meeting',
@@ -354,6 +357,8 @@ els.confirm.value = state.confirm_msg;
 els.meetingUrl.value = state.meeting_url;
 els.meetingLabel.value = state.meeting_label;
 els.published.checked = state.is_published;
+els.voice.checked = state.ai_voice_enabled;
+els.voice.addEventListener('change', () => { state.ai_voice_enabled = els.voice.checked; markDirty(); });
 document.querySelector(`input[name="mode"][value="${state.display_mode}"]`).checked = true;
 
 els.title.addEventListener('input', () => {

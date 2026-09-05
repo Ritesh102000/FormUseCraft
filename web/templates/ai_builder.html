@@ -1,0 +1,55 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% block title %}Build with AI — {{ brand_name }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ static_url('css/ai.css') }}">
+<div class="page-head">
+  <div><p class="eyebrow">Your idea → your form</p><h1 class="display">Build with AI</h1>
+  <p class="muted">Describe what you need, or add a PDF or image. Review the draft, refine it, then open it in your builder.</p></div>
+  <a href="/" class="btn">Back to forms</a>
+</div>
+<div class="ai-builder-grid">
+  <section class="card ai-card">
+    <form id="ai-builder-form">
+      <label class="field-row"><span>Your form description or revision</span>
+        <textarea id="ai-prompt" rows="7" maxlength="8000" required placeholder="Create a customer onboarding form with contact details, project goals, budget ranges, and a meeting at the end."></textarea>
+      </label>
+      <label class="field-row"><span>Reference PDF or image (optional, up to 2 MB)</span>
+        <input id="ai-file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp">
+      </label>
+      <label class="field-row"><span>Your OpenAI API key {% if configured %}(optional override){% endif %}</span>
+        <input id="ai-key" type="password" autocomplete="off" spellcheck="false" maxlength="512" {% if not configured %}required{% endif %}>
+      </label>
+      <p class="muted small">{% if configured %}An environment key is configured.{% else %}Enter your own API key, or set OPENAI_API_KEY on the server.{% endif %}
+        A key entered here is used for this request only and cleared after sending. It is never saved in the browser or database.</p>
+      <p class="muted small">Generating sends your description, reference, and previous draft to OpenAI. API usage is billed to the key owner. Only upload material you intend to share with OpenAI.</p>
+      <button id="ai-generate" class="btn btn-primary" type="submit">Generate draft</button>
+      <button id="ai-reset" class="btn" type="button" hidden>Start a new draft</button>
+    </form>
+    <p id="ai-status" role="status" aria-live="polite"></p>
+    <details><summary>Enable voice for your visitors</summary>
+      <p>Set <code>OPENAI_API_KEY</code>, <code>FORMCRAFT_AI_VOICE_ENABLED=1</code>, and a unique <code>FORMCRAFT_SECRET_KEY</code> of at least 32 characters in your deployment environment. Redeploy, then turn on <strong>AI voice assistance</strong> in each form's settings and save.</p>
+      <p>Visitors choose whether to use voice. They review answers and submit themselves. Voice never books a meeting or makes a payment. Public voice usage is billed to your environment key, with a default shared cap of 200 recorded turns per day.</p>
+    </details>
+  </section>
+  <section class="card ai-card" aria-label="Generated form preview">
+    <div id="ai-empty"><h2>Your draft will appear here</h2><p class="muted">Supports all current question types. You can request changes before saving, then edit every field in the regular builder.</p></div>
+    <div id="ai-preview" hidden></div>
+    <div id="ai-create-controls" hidden>
+      <p id="ai-notes" class="alert" hidden></p>
+      <label class="toggle"><input id="ai-meeting" type="checkbox"><span><strong>Add Google meeting scheduling</strong><em>Requires a connected Calendar. Review the timezone and schedule in Meeting settings before publishing.</em></span></label>
+      <p class="muted small">Payments, respondent file uploads, and conditional logic are not implemented. Generated forms always start as drafts with voice off.</p>
+      <button id="ai-create" class="btn btn-primary" type="button">Create draft and edit</button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ static_url('ai-builder.js') }}"></script>{% endblock %}

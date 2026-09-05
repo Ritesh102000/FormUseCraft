@@ -210,6 +210,24 @@ Native meeting answers appear in PostgreSQL immediately; the Sheet row is sent
 after booking confirmation. Confirm the actual Calendar event and Meet link;
 a redirect alone is not proof of booking. Calendar selection is installation-wide.
 
+## Optional AI builder and voice setup
+
+If the user requests AI, follow [docs/AI.md](docs/AI.md). The owner can enter
+an OpenAI key per generation in **Build with AI**, or configure `OPENAI_API_KEY`
+privately in the deployment environment. Never ask them to paste it into chat.
+Reference PDF/image inputs are supported; generation creates a preview, then the
+owner chooses to save an editable private draft.
+
+For respondent voice, configure the environment key,
+`FORMCRAFT_AI_VOICE_ENABLED=1`, a unique secret of at least 32 characters, and
+an appropriate `FORMCRAFT_AI_VOICE_DAILY_TURNS` cap (default 200). Redeploy and
+enable voice in each intended form's settings. Explain API costs, shared usage
+limits, and audio processing by OpenAI. A builder-only request key cannot fund
+public voice. Verify consent before microphone access, answer confirmation,
+manual submission, and manual scheduling handoff using synthetic answers.
+Payment processing is not implemented; do not describe the handoff prompt as
+a payment integration. Mark live AI verification separately from mocked tests.
+
 ## 7. Add a custom domain, if requested
 
 Add the user's domain in **Vercel Settings → Domains**. Apply only the exact DNS

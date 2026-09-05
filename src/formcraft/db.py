@@ -24,6 +24,11 @@ from psycopg_pool import ConnectionPool
 from .config import settings
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS ai_usage (
+    bucket TEXT PRIMARY KEY,
+    attempts INTEGER NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+);
 CREATE TABLE IF NOT EXISTS google_connection (
     singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
     provider_subject TEXT NOT NULL,
@@ -64,6 +69,9 @@ CREATE TABLE IF NOT EXISTS forms (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS
+    ai_voice_enabled BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS sections (
     id          TEXT PRIMARY KEY,

@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from . import auth, calendar_booking, db, export, media, repository, sheets
+from . import ai, auth, calendar_booking, db, export, media, repository, sheets
 from .config import settings, validate_hosted_settings
 from .models import QUESTION_TYPES, FormIn, validate_answer
 
@@ -68,6 +68,7 @@ def create_app() -> FastAPI:
         StaticFiles(directory=str(settings.web_dir / "static")),
         name="static",
     )
+    ai.register(app, _render, _require_local, _sheet_after_save, settings.role)
     _register_public(app)
     if settings.is_hosted_role:
         from . import hosted
@@ -106,6 +107,7 @@ def _render(request: Request, template: str, **context: Any) -> HTMLResponse:
         context={
             "brand_name": settings.brand_name,
             "hosted": settings.is_hosted_role,
+            "ai_voice_available": ai.voice_available(),
             "owner_name": settings.owner_name,
             "owner_role": settings.owner_role,
             **media.context(),
@@ -1198,6 +1200,7 @@ def _editor_payload(form: dict[str, Any]) -> dict[str, Any]:
         "display_mode": form["display_mode"],
         "accent": form["accent"],
         "is_published": form["is_published"],
+        "ai_voice_enabled": form.get("ai_voice_enabled", False),
         "confirm_msg": form["confirm_msg"],
         "meeting_url": form["meeting_url"],
         "meeting_label": form["meeting_label"],

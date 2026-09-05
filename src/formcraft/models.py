@@ -120,6 +120,7 @@ class FormIn(InputModel):
     display_mode: DisplayMode = "single"
     accent: str = "#6366f1"
     is_published: bool = False
+    ai_voice_enabled: bool = False
     confirm_msg: str = Field(
         default="Thanks — your response has been recorded.", max_length=1000
     )

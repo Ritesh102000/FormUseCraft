@@ -50,3 +50,21 @@ to arrange a private channel before sending details. No security email address
 or response-time SLA is declared. Supply a reproduction with synthetic data,
 affected version, impact, and suggested mitigation. Do not publish exploit
 credentials or private response data.
+
+
+## Optional AI processing
+
+OpenAI keys belong to the installation owner. Dashboard request keys are held
+only for the request; environment keys remain server-side. Owner generation is
+authenticated and requires the canonical origin. Public voice is off by default,
+requires per-form opt-in and visitor consent in the UI, and has shared PostgreSQL
+usage limits. Public endpoints can still be called by automated clients; the caps
+limit usage but are not bot detection or a dollar budget.
+
+Voice has no booking, payment, submission, or arbitrary tool action. Hidden
+provider fields are filtered server-side; only validated visible field candidates
+are returned. Sessions are signed and form/revision-bound. Browser confirmation
+applies candidates locally. Stop/close/navigation releases microphone tracks.
+Uploaded references, short recordings, transcripts, and field context are sent
+to OpenAI as described in [AI privacy and limits](docs/AI.md). Do not post live
+keys, recordings, or respondent data in issues.

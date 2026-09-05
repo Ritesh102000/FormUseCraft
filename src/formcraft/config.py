@@ -59,6 +59,11 @@ class Settings:
     admin_password: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
+    openai_api_key: str = ""
+    ai_model: str = "gpt-4.1-mini"
+    ai_transcribe_model: str = "gpt-4o-mini-transcribe"
+    ai_voice_enabled: bool = False
+    ai_voice_daily_turns: int = 200
 
     @property
     def is_hosted_role(self) -> bool:
@@ -151,6 +156,17 @@ def load_settings() -> Settings:
         or "primary",
         booking_hmac_secret=os.getenv("FORMCRAFT_BOOKING_HMAC_SECRET", "").strip(),
         admin_password=os.getenv("FORMCRAFT_ADMIN_PASSWORD", ""),
+        openai_api_key=(
+            os.getenv("FORMCRAFT_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+        ).strip(),
+        ai_model=os.getenv("FORMCRAFT_AI_MODEL", "gpt-4.1-mini").strip(),
+        ai_transcribe_model=os.getenv(
+            "FORMCRAFT_AI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe"
+        ).strip(),
+        ai_voice_enabled=_flag("FORMCRAFT_AI_VOICE_ENABLED"),
+        ai_voice_daily_turns=max(
+            0, min(5000, int(os.getenv("FORMCRAFT_AI_VOICE_DAILY_TURNS", "200")))
+        ),
         google_client_id=os.getenv("FORMCRAFT_GOOGLE_CLIENT_ID", "").strip(),
         google_client_secret=os.getenv("FORMCRAFT_GOOGLE_CLIENT_SECRET", "").strip(),
     )

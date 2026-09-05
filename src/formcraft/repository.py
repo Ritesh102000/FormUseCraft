@@ -206,9 +206,10 @@ def create_form(
             conn.execute(
                 """INSERT INTO forms
                    (id, slug, public_ref, title, description, display_mode, accent,
-                    is_published, confirm_msg, meeting_url, meeting_label,
+                    is_published, ai_voice_enabled, confirm_msg, meeting_url,
+                    meeting_label,
                     booking_mode, booking_config, sheet_profile, created_at, updated_at)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                 (
                     form_id,
                     slug,
@@ -218,6 +219,7 @@ def create_form(
                     payload.display_mode,
                     payload.accent,
                     payload.is_published,
+                    payload.ai_voice_enabled,
                     payload.confirm_msg,
                     payload.meeting_url,
                     payload.meeting_label,
@@ -265,6 +267,7 @@ def update_form(form_id: str, payload: FormIn) -> None:
                 """UPDATE forms
                       SET slug = %s, title = %s, description = %s,
                           display_mode = %s, accent = %s, is_published = %s,
+                          ai_voice_enabled = %s,
                           confirm_msg = %s, meeting_url = %s,
                           meeting_label = %s, updated_at = %s
                     WHERE id = %s""",
@@ -275,6 +278,7 @@ def update_form(form_id: str, payload: FormIn) -> None:
                     payload.display_mode,
                     payload.accent,
                     payload.is_published,
+                    payload.ai_voice_enabled,
                     payload.confirm_msg,
                     payload.meeting_url,
                     payload.meeting_label,

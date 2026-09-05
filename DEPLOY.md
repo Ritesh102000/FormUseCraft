@@ -93,6 +93,15 @@ Calendar**. Sign in to the Google account that should own your data and approve
 the scopes. Tokens are encrypted in PostgreSQL; no token file upload is needed.
 See [the Google guide](docs/GOOGLE_SHEETS.md) for consent-screen and token limits.
 
+## Optional AI configuration
+
+The owner dashboard includes **Build with AI** using a per-request OpenAI key
+or the server's `OPENAI_API_KEY`. For visitor voice assistance, additionally
+set `FORMCRAFT_AI_VOICE_ENABLED=1`, redeploy, and opt in each published form.
+Use `FORMCRAFT_AI_VOICE_DAILY_TURNS` to choose a shared turn cap (default 200).
+See [AI setup](docs/AI.md) for models, privacy, usage limits, and acceptance checks.
+Public voice fills answer fields; submission and booking remain manual.
+
 ## 4. Make and share forms
 
 Click **New form**, add questions, save, and publish. Copy its public `/f/…` link

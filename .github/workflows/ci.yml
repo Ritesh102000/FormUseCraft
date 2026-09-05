@@ -42,5 +42,7 @@ jobs:
       - run: uv run pytest -q
       - run: node --check web/static/builder.js
       - run: node --check web/static/form.js
+      - run: node --check web/static/ai-builder.js
+      - run: node --check web/static/voice.js
       - run: uv run python scripts/check_release.py
       - run: git diff --check

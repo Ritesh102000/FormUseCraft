@@ -28,6 +28,7 @@ dependencies = [
     "google-api-python-client>=2.150.0",
     "xlsxwriter>=3.2.9",
     "cryptography>=44.0.0",
+    "httpx>=0.28.0",
 ]
 
 [build-system]

@@ -56,6 +56,8 @@ custom domain. Possession of a form link allows submission; links can be forward
 
 ## Features
 
+- An owner AI builder using your own OpenAI key: describe a form or attach a PDF/image, refine its draft, and edit it in the dashboard.
+- Optional per-form voice assistance: a globe invites visitors to answer questions aloud, confirm values, and review before submitting. Scheduling remains manual.
 - A visual builder with sections, drafts, publishing, theme accent, and custom
   confirmation messages.
 - Three layouts: one page, section by section, or one question at a time.
@@ -89,6 +91,19 @@ personal, non-commercial use. Commercial software use is allowed by this project
 license, but choose a hosting plan that permits it. Hosting, databases, and domain
 registration have separate usage limits and possible costs.
 
+## Optional AI setup
+
+Choose **Build with AI** in the owner dashboard. Supply a key for that request,
+or configure `OPENAI_API_KEY` on the server. PDFs and images are accepted as
+owner reference inputs. Generated forms start as private drafts.
+
+For public voice, set `FORMCRAFT_AI_VOICE_ENABLED=1` with your environment key,
+redeploy, then enable **AI voice assistance** on each form. Visitors explicitly
+start it; it confirms field values and never submits, books meetings, or pays.
+API usage is billed to the key owner and capped by shared app usage limits.
+See [AI setup, privacy, limits, and troubleshooting](docs/AI.md). Payment
+processing is not implemented.
+
 ## License and provider credit
 
 Free personal and commercial use is allowed under [LICENSE](LICENSE), a **custom
@@ -104,7 +119,7 @@ is not bundled. See [IMAGES.md](IMAGES.md) for optional images you own.
 ## Limits
 
 One owner per installation; no multi-tenant signup, shared workspaces, payments,
-file uploads, or arbitrary existing-spreadsheet picker. Sheets are created by
+respondent file uploads, or arbitrary existing-spreadsheet picker. Sheets are created by
 this app. Google connectivity is optional for regular data collection.
 
 Native meeting responses are saved in PostgreSQL immediately; their Sheet rows
@@ -145,6 +160,8 @@ uv run ruff check .
 uv run pytest -q
 node --check web/static/builder.js
 node --check web/static/form.js
+node --check web/static/ai-builder.js
+node --check web/static/voice.js
 uv run python scripts/check_release.py
 git diff --check
 ```

@@ -201,6 +201,7 @@ form.addEventListener('submit', async (event) => {
     if (!res.ok) throw new Error(data.detail || 'Something went wrong.');
 
     responseSaved = true;
+    window.dispatchEvent(new CustomEvent('formcraft:handoff', { detail: { stage: window.MEETING_PROVIDER ? 'booking' : 'done' } }));
     responseId = data.id || '';
     bookingToken = data.booking_token || '';
     document.getElementById('done-msg').textContent = data.message;
@@ -769,3 +770,48 @@ if (steps.length) {
   nextBtn.hidden = true;
   if (hint) hint.hidden = true;
 }
+
+
+// A narrow field adapter: deliberately exposes no submit, booking or payment action.
+window.FormcraftVoiceFields = (() => {
+  const fieldFor = (id) => Array.from(form.querySelectorAll('.field[data-hidden="0"]')).find((el) => el.dataset.question === id);
+  return Object.freeze({
+    isSubmitted: () => responseSaved || responseSaving,
+    read: (id) => { const field = fieldFor(id); return field ? readField(field) : ''; },
+    hasValue: (id) => {
+      const field = fieldFor(id);
+      if (!field) return true;
+      const value = readField(field);
+      return Array.isArray(value) ? value.length > 0 : String(value).trim() !== '';
+    },
+    reveal: (id) => {
+      const field = fieldFor(id);
+      if (!field || responseSaved) return;
+      const step = steps.findIndex((el) => el === field || el.contains(field));
+      if (step >= 0) showStep(step);
+      field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+    review: () => { if (steps.length) showStep(steps.length - 1); },
+    apply: (id, value) => {
+      const field = fieldFor(id);
+      if (!field || responseSaved || responseSaving) return false;
+      const controls = Array.from(field.querySelectorAll('input, select, textarea'));
+      if (!controls.length || controls.some((el) => el.disabled || el.readOnly)) return false;
+      if (['radio', 'checkbox', 'scale', 'rating'].includes(field.dataset.type)) {
+        const values = (Array.isArray(value) ? value : [value]).map(String);
+        if (values.some((v) => !controls.some((el) => el.value === v))) return false;
+        controls.forEach((el) => { el.checked = values.includes(el.value); });
+      } else {
+        const el = controls[0];
+        if (el.tagName === 'SELECT' && !Array.from(el.options).some((o) => o.value === String(value))) return false;
+        el.value = String(value);
+        if (String(value) && !el.value) return false;
+      }
+      controls.forEach((el) => {
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      return true;
+    },
+  });
+})();

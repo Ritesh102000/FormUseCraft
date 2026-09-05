@@ -65,7 +65,7 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
       <div class="form-meta" aria-label="Form privacy details">
         <div class="form-meta__item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 1-3-6.2M20 4v7h-7"/></svg>
-          <span>Your progress stays on this page until submission</span>
+          <span>{% if ai_voice_available and form.ai_voice_enabled %}Typing stays on this page until submission. Optional voice sends audio to OpenAI.{% else %}Your progress stays on this page until submission{% endif %}</span>
         </div>
         <div class="form-meta__item">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
@@ -220,6 +220,11 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
     {% include "components/provider_credit.html" %}
   </main>
 
+  {% if ai_voice_available and form.ai_voice_enabled and not preview %}
+  <link rel="stylesheet" href="{{ static_url('css/ai.css') }}">
+  {% include "components/voice_assistant.html" %}
+  {% endif %}
+
   <script>
     window.FORM_MODE = {{ form.display_mode | tojson }};
     window.FORM_REF = {{ form.public_ref | tojson }};
@@ -228,5 +233,6 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
   </script>
   {% if meeting_provider == 'calendly' %}<script src="https://assets.calendly.com/assets/external/widget.js" async></script>{% endif %}
   <script src="{{ static_url('form.js') }}"></script>
+  {% if ai_voice_available and form.ai_voice_enabled and not preview %}<script src="{{ static_url('voice.js') }}"></script>{% endif %}
 </body>
 </html>

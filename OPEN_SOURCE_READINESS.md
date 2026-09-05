@@ -54,3 +54,33 @@ automated HTTPS login checks succeeded. Live Google and Vercel setup was not run
 
 A fresh independent publishing checkout is prepared for the authorized GitHub
 destination, keeping the original baseline history out of the public repository.
+
+
+## AI builder and voice addition (2026-09-05)
+
+The owner requested an AI builder using their own OpenAI key, description/PDF/image
+inputs, and optional per-form public voice assistance funded by an environment
+key. The owner explicitly excludes voice booking actions. Payments remain
+unimplemented; a payment handoff prompt is not a payment integration.
+
+- `/admin/ai` generates/refines a validated preview and creates an editable,
+  unpublished draft. Request-only keys are never persisted; environment keys
+  are also supported. Native meeting drafts require connected Google Calendar
+  and receive server-generated attendee bindings and hidden booking metadata.
+- Public voice requires the environment key, global switch, per-form flag, and
+  visitor opt-in. It maps short recordings to one visible field, validates and
+  confirms the value, and leaves submission and scheduling to the visitor.
+- No voice action can save a response, book, pay, or write provider metadata.
+  Sessions are signed, expire in 30 minutes, and bind to a form/revision.
+  PostgreSQL usage counters span serverless instances; requests and uploads
+  are bounded. Recordings/transcripts and owner request keys are not persisted.
+- `docs/AI.md`, `.env.example`, README, deployment, and LLM setup guides document
+  keys, switches, cost/usage boundaries, privacy, and live verification steps.
+
+Verification: 154 Python tests passed with disposable PostgreSQL and mocked
+OpenAI/Google, plus Ruff and four JavaScript syntax checks. Local Chrome smoke
+checks passed owner generation/save, voice opt-in persistence, consent, answer
+confirmation, stopping microphone tracks, manual submission, and scheduling
+handoff in all three form layouts, including mobile. Browser speech/microphone
+and OpenAI responses were synthetic. No live OpenAI request or deployment was
+made; live speech quality and account access remain unverified.

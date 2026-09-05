@@ -38,6 +38,7 @@ implemented. Publication to Ritesh102000/FormUseCraft is authorized by the owner
 ## Code map
 
 - `src/formcraft/app.py`: routes, rendering, submission and booking orchestration.
+- `src/formcraft/ai.py`: owner AI draft generation and bounded public voice mapping.
 - `src/formcraft/models.py`: form schemas, field types, validation.
 - `src/formcraft/db.py`: idempotent PostgreSQL schema initialization.
 - `src/formcraft/repository.py`: persistence operations.
@@ -73,6 +74,8 @@ uv run ruff check .
 uv run pytest -q
 node --check web/static/builder.js
 node --check web/static/form.js
+node --check web/static/ai-builder.js
+node --check web/static/voice.js
 git diff --check
 ```
 
@@ -87,6 +90,15 @@ git diff --check
   prices, booking ownership, or payment success.
 - Make callbacks, jobs, and webhooks authenticated and idempotent.
 - Keep response, payment, and booking states separate.
+
+## AI invariants
+
+- Keep API keys server-side or request-only; never persist browser-supplied keys.
+- AI generation returns a validated preview; saving creates an unpublished draft.
+- Voice requires a global environment key/switch plus per-form opt-in and visitor consent.
+- Voice can fill visible fields only; never expose submit, booking, payment, or provider metadata actions.
+- Keep shared PostgreSQL usage caps, bounded uploads, and form-bound expiring sessions.
+- Live AI/provider claims require live evidence; tests use mocks. See `docs/AI.md`.
 
 ## Public release requirements
 

@@ -1,0 +1,28 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+<div class="voice-widget" id="voice-widget">
+  <button class="voice-orb" id="voice-toggle" type="button" aria-label="Open AI voice help" aria-expanded="false" aria-controls="voice-panel"><span aria-hidden="true"></span></button>
+  <span class="voice-invite" id="voice-invite">Want help filling this form?</span>
+  <section class="voice-panel" id="voice-panel" aria-label="AI voice assistance" hidden>
+    <div class="voice-panel-head"><strong>Fill with voice</strong><button id="voice-close" class="btn btn-sm" type="button" aria-label="Close voice help">Close</button></div>
+    <p id="voice-status" role="status" aria-live="polite">Would you like me to ask each question and help fill your answers?</p>
+    <p class="small muted" id="voice-privacy">This is an AI assistant. With your permission, recordings and the current question are sent to OpenAI. Questions are read using your browser's voice. You confirm each answer. You submit, choose meeting times, and pay yourself.</p>
+    <p id="voice-transcript" class="small" hidden></p>
+    <p id="voice-candidate" hidden></p>
+    <div class="voice-actions">
+      <button id="voice-start" class="btn btn-primary" type="button">Yes, use voice</button>
+      <button id="voice-record" class="btn" type="button" hidden>Record answer</button>
+      <button id="voice-accept" class="btn btn-primary" type="button" hidden>Use this answer</button>
+      <button id="voice-retry" class="btn" type="button" hidden>Try again</button>
+      <button id="voice-next" class="btn" type="button" hidden>Skip / fill manually</button>
+      <button id="voice-stop" class="btn" type="button" hidden>Stop voice</button>
+    </div>
+  </section>
+</div>
