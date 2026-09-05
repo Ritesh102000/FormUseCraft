@@ -30,3 +30,6 @@ dist/
 
 # Local browser verification artifacts may contain response data.
 .playwright-mcp/
+
+# Demo media is published as GitHub attachments; keep local copies out of source exports.
+/demo-clips/
