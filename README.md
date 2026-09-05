@@ -21,6 +21,9 @@ hosted setup does not require a local builder or a token-upload script.
 
 ## Start using it
 
+**Setting up with an AI assistant?** Give it [setup_llm.md](setup_llm.md) for the
+complete deployment workflow, account setup, verification, and troubleshooting.
+
 1. **Deploy your copy.** Click the button above. Supply your own pooled PostgreSQL
    URL, owner password, and unique installation secret. See [DEPLOY.md](DEPLOY.md).
 2. **Sign in.** Open your deployed URL and sign in as `admin` with the password
