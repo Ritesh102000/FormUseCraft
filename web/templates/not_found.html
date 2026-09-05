@@ -1,0 +1,35 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Form not available</title>
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <link rel="stylesheet" href="{{ static_url('css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/components.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/form.css') }}">
+</head>
+<body class="public">
+  <main class="not-found-shell">
+    <section class="not-found-card">
+      <span class="not-found-code" aria-hidden="true">404</span>
+      <div>
+        <p class="eyebrow">Link unavailable</p>
+        <h1 class="display">This form isn't available</h1>
+      </div>
+      <p class="lede" style="text-align:center">The link may be incomplete, or the form may have been closed. Check the link you received, then ask the sender for a fresh one if needed.</p>
+      {% include "components/provider_credit.html" %}
+    </section>
+  </main>
+</body>
+</html>

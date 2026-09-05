@@ -1,0 +1,53 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{# Shared UI macros. Import with:
+   {% from "components/ui.html" import media, brand, pill %} #}
+
+{# compact=True shows only the slot name and size — for tight spots like cards,
+   where the full brief would swamp the layout. #}
+{% macro media(slot_name, slots, media_url, variant="", class="", style="", compact=False) -%}
+  {%- set slot = slots.get(slot_name) -%}
+  {%- set url = media_url(slot_name, variant) if slot else None -%}
+  {%- if url -%}
+    <div class="media {{ class }}" style="{{ style }}">
+      <img src="{{ url }}" alt="{{ slot.label }}" loading="lazy">
+    </div>
+  {%- elif slot and compact -%}
+    <div class="media-ph {{ class }}" style="aspect-ratio: {{ slot.ratio }}; {{ style }}">
+      <span class="media-ph__slot">{{ slot.label }}</span>
+      <span class="media-ph__meta">{{ slot.size }}</span>
+    </div>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro brand(slots, media_url, name="Formcraft", href="/") -%}
+  <a class="brand" href="{{ href }}">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">{{ name }}</span>
+  </a>
+{%- endmacro %}
+
+{% macro pill(published) -%}
+  <span class="pill {{ 'pill-live' if published else 'pill-draft' }}">
+    <span class="dot"></span>{{ 'Live' if published else 'Draft' }}
+  </span>
+{%- endmacro %}
+
+{% macro trust_strip(slots, media_url, count=4) -%}
+  <div class="logo-strip">
+    {% for i in range(1, count + 1) %}
+      {# compact: at 120px wide the full brief wraps into a tall column and
+         destroys the strip. The description stays available on hover. #}
+      {% if media_url("trust-logo-" ~ i) %}
+      {{ media("trust-logo-" ~ i, slots, media_url, compact=True, style="width:120px") }}
+      {% endif %}
+    {% endfor %}
+  </div>
+{%- endmacro %}

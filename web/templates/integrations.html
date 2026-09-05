@@ -1,0 +1,42 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% block title %}Google integrations — {{ brand_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Owner settings</p><h1 class="display">Google integrations</h1><p class="muted">Your account owns the Sheets and calendar events. Respondents never sign in to Google.</p></div></div>
+{% if result == 'connected' %}<p class="alert alert-success">Google connected. Create a form, or open an existing form's responses and choose Create Sheet.</p>{% endif %}
+{% if result == 'disconnected' %}<p class="alert alert-warn">Google disconnected from this installation. Forms still collect responses in the database. Sheets sync and native booking are paused.</p>{% endif %}
+{% if result == 'cancelled' %}<p class="alert alert-warn">Connection cancelled. Your previous connection was preserved.</p>{% endif %}
+{% if result == 'failed' %}<p class="alert alert-error">Google could not be connected. Check the redirect URL, enabled APIs, and requested permissions, then try again. Reconnect the same Google account if existing forms use its Sheets or Calendar.</p>{% endif %}
+<div class="card stack" style="padding:var(--sp-6);max-width:760px">
+<h2>{{ 'Connected to ' ~ connection.email if connection.connected else 'Connect your Google account' }}</h2>
+<p class="muted">Sheets creates a spreadsheet for each form. Calendar access adds availability checks, meeting invitations, and Google Meet links on meeting forms.</p>
+{% if not configured %}
+<div class="alert alert-warn">One-time setup: add your own Google Web application OAuth client to this deployment, then redeploy. No Google account is bundled with the project.</div>
+<ol class="stack">
+<li>Open <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>. Enable Google Drive and Sheets APIs. Enable Calendar API if you want meetings.</li>
+<li>Configure the OAuth consent screen and create a <strong>Web application</strong> OAuth client.</li>
+<li>Add this exact authorized redirect URI:<br><code>{{ callback_url }}</code></li>
+<li>In Vercel's Production environment variables, set <code>FORMCRAFT_GOOGLE_CLIENT_ID</code> and <code>FORMCRAFT_GOOGLE_CLIENT_SECRET</code> from that client. Redeploy, then return here.</li>
+</ol>
+{% else %}
+<p class="muted small">Authorized redirect URI: <code>{{ callback_url }}</code></p>
+<div class="row">
+<form action="/oauth/google/start" method="post"><input type="hidden" name="calendar" value="0"><button class="btn" type="submit">{{ 'Reconnect Google Sheets' if connection.connected else 'Connect Google Sheets' }}</button></form>
+<form action="/oauth/google/start" method="post"><input type="hidden" name="calendar" value="1"><button class="btn btn-primary" type="submit">Connect Sheets + Calendar</button></form>
+</div>
+{% endif %}
+{% if connection.connected %}
+<p>Sheets: connected · Calendar: {{ 'connected' if connection.calendar else 'not enabled' }}</p>
+<form action="/oauth/google/disconnect" method="post"><button class="btn btn-danger" type="submit">Disconnect from this installation</button></form>
+{% endif %}
+<p class="muted small">The connection is stored encrypted in your database. Keep your installation secret unchanged. Disconnecting removes the stored token; to revoke Google's grant too, use <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Google account permissions</a>.</p>
+</div>
+{% endblock %}

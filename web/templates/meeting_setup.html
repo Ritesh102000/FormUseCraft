@@ -1,0 +1,32 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% block title %}{{ 'Meeting settings' if form else 'New meeting form' }} — {{ brand_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Google Calendar</p><h1 class="display">{{ 'Meeting settings' if form else 'New meeting form' }}</h1><p class="muted">Collect a name and email, then let the respondent choose an available meeting time.</p></div></div>
+{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+{% if not connection.connected or not connection.calendar %}
+<p class="alert alert-warn">Connect Google Sheets + Calendar before creating a meeting form. <a href="/admin/integrations">Open integrations</a>.</p>
+{% else %}
+<form method="post" class="card stack" style="padding:var(--sp-6);max-width:640px">
+{% if not form %}<label class="field-row"><span>Form title</span><input name="title" value="Book a meeting" maxlength="300" required></label>{% endif %}
+<label class="field-row"><span>Your schedule timezone</span><input name="timezone" value="{{ schedule.timezone }}" placeholder="e.g. Europe/London" required><small>Use an IANA timezone, such as Asia/Kolkata or America/New_York.</small></label>
+<fieldset><legend>Available weekdays</legend><div class="row">
+{% for day in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}<label><input type="checkbox" name="weekdays" value="{{ loop.index0 }}" {% if loop.index0 in schedule.weekdays %}checked{% endif %}> {{ day }}</label>{% endfor %}
+</div></fieldset>
+<div class="row"><label class="field-row"><span>First start time</span><input type="time" name="first_start" value="{{ schedule.first_start }}" required></label><label class="field-row"><span>Last start time</span><input type="time" name="last_start" value="{{ schedule.last_start }}" required></label></div>
+<label class="field-row"><span>Meeting duration</span><select name="duration_minutes">{% for minutes in [15,30,45,60,90,120] %}<option value="{{ minutes }}" {% if minutes == schedule.duration_minutes %}selected{% endif %}>{{ minutes }} minutes</option>{% endfor %}</select></label>
+<label class="field-row"><span>Minimum notice (hours)</span><input type="number" name="minimum_notice_hours" min="0" max="168" value="{{ schedule.minimum_notice_hours }}" required></label>
+<label class="field-row"><span>Booking window (days)</span><input type="number" name="booking_window_days" min="1" max="60" value="{{ schedule.booking_window_days }}" required></label>
+<p class="muted small">Uses your configured Google calendar (primary by default). The final meeting ends one duration after the last start time. Respondents see times in their own timezone. Google Meet must be supported by your account.</p>
+<button class="btn btn-primary" type="submit">{{ 'Save meeting settings' if form else 'Create draft and edit questions' }}</button>
+</form>
+{% endif %}
+{% endblock %}

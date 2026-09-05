@@ -1,0 +1,232 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% from "components/ui.html" import media %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ form.title }}</title>
+  <meta name="description" content="{{ form.description or form.title }}">
+  <meta property="og:title" content="{{ form.title }}">
+  <meta property="og:description" content="{{ form.description or 'Complete this form.' }}">
+  {% set og = media_url('og-default') %}
+  {% if og %}<meta property="og:image" content="{{ og }}">{% endif %}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <link rel="icon" href="data:,">
+
+  <link rel="stylesheet" href="{{ static_url('css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/components.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/form.css') }}">
+  <style>:root { --accent: {{ form.accent }}; }</style>
+</head>
+<body class="public">
+  {% if preview %}<div class="preview-banner">Draft preview — responses are not being collected</div>{% endif %}
+  <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress"></div></div>
+
+  <header class="public-topbar">
+    <span class="public-brand" aria-label="{{ brand_name }}">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">{{ brand_name }}</span>
+    </span>
+    <span class="public-status">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      <span>Private response link</span>
+    </span>
+  </header>
+
+  <main class="form-shell">
+    <aside class="form-context">
+      <div>
+        <p class="eyebrow">Response form</p>
+        <h1 class="display">{{ form.title }}</h1>
+        {% if form.description %}<p class="lede" style="margin-top:16px">{{ form.description }}</p>{% endif %}
+      </div>
+
+      {% if owner_name %}
+      <div class="sender">
+        <span class="sender__badge" aria-hidden="true">{{ owner_name[0] | upper }}</span>
+        <div>
+          <div class="sender__name">Sent by {{ owner_name }}</div>
+          {% if owner_role %}<div class="sender__role">{{ owner_role }}</div>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="form-meta" aria-label="Form privacy details">
+        <div class="form-meta__item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 1-3-6.2M20 4v7h-7"/></svg>
+          <span>Your progress stays on this page until submission</span>
+        </div>
+        <div class="form-meta__item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <span>Your response is sent to the form owner</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="form-panel">
+      <div class="form-panel__head">
+        <span><strong>{{ form.question_count }}</strong> question{{ '' if form.question_count == 1 else 's' }}</span>
+        <span><span aria-hidden="true">*</span> Required</span>
+      </div>
+
+      <form id="form" novalidate>
+        {% for section in form.sections %}
+        <fieldset class="step" data-step data-section="{{ loop.index0 }}">
+          {% if section.title or section.description %}
+          <legend class="section-legend">
+            {% if section.title %}<h2>{{ section.title }}</h2>{% endif %}
+            {% if section.description %}<p>{{ section.description }}</p>{% endif %}
+          </legend>
+          {% endif %}
+
+          {% for q in section.questions %}
+          <div class="field" data-question="{{ q.id }}" data-type="{{ q.type }}" data-required="{{ 1 if q.required else 0 }}" data-hidden="{{ 1 if q.config.get('hidden') else 0 }}"{% if q.config.get('calendly_field') %} data-calendly-field="{{ q.config.get('calendly_field') }}"{% endif %}{% if q.config.get('hidden') %} hidden{% endif %}>
+            {% if q.config.get('hidden') %}
+              <input id="q-{{ q.id }}" name="{{ q.id }}" type="hidden">
+            {% else %}
+            <label class="field-label" for="q-{{ q.id }}">
+              {{ q.label }}{% if q.required %}<span class="req" aria-label="required">*</span>{% endif %}
+            </label>
+            {% if q.help_text %}<p class="field-help">{{ q.help_text }}</p>{% endif %}
+
+            {% if q.type in ['short_text', 'email', 'date', 'time'] %}
+              <input id="q-{{ q.id }}" name="{{ q.id }}" type="{{ {'short_text':'text','email':'email','date':'date','time':'time'}[q.type] }}" placeholder="{{ q.placeholder }}">
+            {% elif q.type == 'number' %}
+              <input id="q-{{ q.id }}" name="{{ q.id }}" type="number" placeholder="{{ q.placeholder }}" {% if q.config.min is not none %}min="{{ q.config.min }}"{% endif %} {% if q.config.max is not none %}max="{{ q.config.max }}"{% endif %}>
+            {% elif q.type == 'long_text' %}
+              <textarea id="q-{{ q.id }}" name="{{ q.id }}" rows="4" placeholder="{{ q.placeholder }}"></textarea>
+            {% elif q.type == 'select' %}
+              <select id="q-{{ q.id }}" name="{{ q.id }}">
+                <option value="">Select an option…</option>
+                {% for opt in q.options %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}
+              </select>
+            {% elif q.type in ['radio', 'checkbox'] %}
+              <div class="choices">
+                {% for opt in q.options %}
+                <label class="choice"><input type="{{ q.type }}" name="{{ q.id }}" value="{{ opt }}"><span>{{ opt }}</span></label>
+                {% endfor %}
+              </div>
+            {% elif q.type == 'scale' %}
+              <div class="scale" role="radiogroup">
+                {% for n in range(q.config.get('min', 1)|int, q.config.get('max', 5)|int + 1) %}
+                <label class="scale-item"><input type="radio" name="{{ q.id }}" value="{{ n }}"><span>{{ n }}</span></label>
+                {% endfor %}
+              </div>
+            {% elif q.type == 'rating' %}
+              <div class="rating" data-max="{{ q.config.get('max', 5) }}">
+                {% for n in range(1, q.config.get('max', 5)|int + 1) %}
+                <label class="star"><input type="radio" name="{{ q.id }}" value="{{ n }}"><span aria-hidden="true">★</span></label>
+                {% endfor %}
+              </div>
+            {% endif %}
+            <p class="field-error" hidden></p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </fieldset>
+        {% endfor %}
+
+        <div class="form-nav">
+          <button type="button" class="btn btn-ghost" id="back" hidden>Back</button>
+          <button type="button" class="btn btn-primary btn-lg" id="next" hidden>Continue</button>
+          <button type="submit" class="btn btn-primary btn-lg" id="submit">Submit form</button>
+          <span class="hint" id="hint" hidden>Press <kbd>Enter</kbd></span>
+        </div>
+      </form>
+
+      <div class="done" id="done" hidden>
+        {% if media_url("form-success") %}{{ media("form-success", slots, media_url) }}{% endif %}
+        <h2 id="done-msg">{{ form.confirm_msg }}</h2>
+        {% if meeting_provider %}
+        <p>Your response has been delivered. You can now choose a meeting time below.</p>
+        {% else %}
+        <p>Your response has been delivered.</p>
+        <button class="btn btn-ghost" id="again">Submit another response</button>
+        {% endif %}
+      </div>
+
+      {% if meeting_provider %}
+      <section class="booking-block" id="{{ 'calendly-booking' if meeting_provider == 'calendly' else 'google-calendar-booking' if meeting_provider == 'google_calendar' else 'native-booking' if meeting_provider == 'google_api' else 'meeting-booking' }}" data-booking-block data-provider="{{ meeting_provider }}" aria-labelledby="booking-title" hidden>
+        <div class="booking-block__head">
+          <p class="eyebrow">Form submitted</p>
+          <h2 id="booking-title" tabindex="-1">Book a meeting</h2>
+          {% if meeting_provider == 'calendly' %}
+          <p>Select an available time below. Your booking details will be attached to the response you just submitted.</p>
+          {% elif meeting_provider == 'google_calendar' %}
+          <p>Select an available time below. Google Calendar manages the booking separately; your business details are already saved.</p>
+          {% elif meeting_provider == 'google_api' %}
+          <p>Select a time below and confirm it here. A Google Calendar invitation with your Meet link will be emailed to you.</p>
+          <div class="booking-facts" aria-label="Meeting details">
+            <span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>
+              60 min
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="11" height="12" rx="2"/><path d="m15 10 5-3v10l-5-3"/></svg>
+              Google Meet
+            </span>
+            <span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+              Details saved
+            </span>
+          </div>
+          {% else %}
+          <p>Continue to the booking page below. Your business details are already saved.</p>
+          {% endif %}
+        </div>
+        {% if meeting_provider == 'calendly' %}
+        <div class="calendly-inline-widget" data-url="{{ form.meeting_url }}" style="min-width:320px;height:700px;"></div>
+        {% elif meeting_provider == 'google_calendar' %}
+        <iframe class="google-calendar-embed" src="{{ form.meeting_url }}" title="Google Calendar appointment booking" loading="eager" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        {% elif meeting_provider == 'google_api' %}
+        <div class="native-booking" id="native-booking-slots" aria-busy="true">
+          <div class="native-booking__loading" role="status">
+            <div class="booking-skeleton booking-skeleton--calendar" aria-hidden="true"></div>
+            <div class="booking-skeleton booking-skeleton--times" aria-hidden="true"></div>
+            <span>Checking live availability…</span>
+          </div>
+        </div>
+        <p class="booking-timezone" id="booking-timezone"></p>
+        <button class="btn btn-ghost booking-retry" id="retry-booking-slots" type="button" hidden>Retry loading times</button>
+        <div class="booking-selection" id="booking-selection" hidden>
+          <div>
+            <span>Selected time</span>
+            <strong id="booking-selection-text"></strong>
+          </div>
+          <button class="btn btn-primary btn-lg" id="confirm-booking" type="button" disabled>Confirm meeting</button>
+        </div>
+        {% else %}
+        <a class="btn btn-primary btn-lg booking-link" href="{{ form.meeting_url }}" target="_blank" rel="noopener">{{ form.meeting_label }}</a>
+        {% endif %}
+        <p class="booking-status" id="booking-status" aria-live="polite">Your form response is already saved.</p>
+        {% if meeting_provider in ['calendly', 'google_api'] %}
+        <button class="btn btn-ghost" id="again" type="button" hidden>Submit another response</button>
+        {% endif %}
+      </section>
+      {% endif %}
+    </section>
+
+    {% include "components/provider_credit.html" %}
+  </main>
+
+  <script>
+    window.FORM_MODE = {{ form.display_mode | tojson }};
+    window.FORM_REF = {{ form.public_ref | tojson }};
+    window.IS_PREVIEW = {{ preview | tojson }};
+    window.MEETING_PROVIDER = {{ meeting_provider | tojson }};
+  </script>
+  {% if meeting_provider == 'calendly' %}<script src="https://assets.calendly.com/assets/external/widget.js" async></script>{% endif %}
+  <script src="{{ static_url('form.js') }}"></script>
+</body>
+</html>

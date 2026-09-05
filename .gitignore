@@ -1,0 +1,43 @@
+# Formcraft by catapultaiwork — https://catapultaiwork.com
+# Source-available with required attribution; see LICENSE.
+# Personal and commercial use is allowed. Every hosted form must retain the small
+# "Powered by catapultaiwork" link. There is no builder setting to hide it.
+# People controlling the source can edit it, but the license requires this credit.
+# This is a custom attribution license, not standard MIT or OSI-approved open source.
+
+.env
+.env.*
+!.env.example
+data/
+.venv/
+tmp/
+.DS_Store
+.coverage
+htmlcov/
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.vercel
+.agents/
+skills-lock.json
+
+# Credentials, databases, generated packages and editor/runtime output.
+*.pem
+*.key
+*client_secret*.json
+*google_token*.json
+credentials*.json
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.log
+build/
+dist/
+node_modules/
+.idea/
+.vscode/
+
+.claude/

@@ -1,0 +1,86 @@
+/*
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+*/
+
+/* Formcraft design system — crisp, calm, and intentionally image-light. */
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --brand: #2555e7;
+  --brand-hover: #1946ce;
+  --brand-soft: #edf2ff;
+  --brand-ink: #ffffff;
+  --accent: var(--brand);
+  --highlight: #f4b740;
+
+  /* Surfaces */
+  --bg: #f5f7fb;
+  --bg-tint: #f1f4f9;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --surface-3: #eef1f6;
+  --surface-inverse: #0d1b2a;
+  --border: #e2e7ef;
+  --border-strong: #cbd3df;
+
+  /* Text */
+  --text: #101828;
+  --text-2: #344054;
+  --muted: #667085;
+  --faint: #98a2b3;
+
+  /* Status */
+  --danger: #d92d20;
+  --ok: #087443;
+  --warn: #b54708;
+
+  /* Type */
+  --font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.0625rem;
+  --step-2: 1.375rem;
+  --step-3: clamp(1.75rem, 1.5rem + 0.8vw, 2.25rem);
+  --step-4: clamp(2rem, 1.55rem + 1.7vw, 3rem);
+  --step-5: clamp(2.5rem, 1.7rem + 3.5vw, 4.75rem);
+
+  /* Space */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 72px;
+
+  /* Shape */
+  --r-xs: 6px;
+  --r-sm: 9px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 5%);
+  --shadow-md: 0 1px 3px rgb(16 24 40 / 5%), 0 10px 28px rgb(16 24 40 / 7%);
+  --shadow-lg: 0 2px 6px rgb(16 24 40 / 5%), 0 24px 64px rgb(16 24 40 / 12%);
+
+  --ring: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+
+  --measure: 64ch;
+  --wrap: 1240px;
+  --wrap-narrow: 720px;
+  --sidebar: 244px;
+}

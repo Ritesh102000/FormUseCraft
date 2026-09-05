@@ -1,0 +1,134 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% from "components/ui.html" import media %}
+{% block title %}{{ form.title }} — responses{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow"><a href="/admin/{{ form.id }}">{{ form.title }}</a></p>
+    <h1 class="display">Responses</h1>
+    <p class="muted small">{{ responses|length }} response{{ '' if responses|length == 1 else 's' }}</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-sm" href="/admin/{{ form.id }}">Edit form</a>
+    <a class="btn btn-sm" href="/admin/{{ form.id }}/export.csv">CSV</a>
+    <a class="btn btn-primary btn-sm" href="/admin/{{ form.id }}/export.xlsx">Download Excel</a>
+    {% if form.sheet_url %}
+    <a class="btn btn-sm btn-ghost" href="{{ form.sheet_url }}" target="_blank" rel="noopener">Sheet ↗</a>
+    {% elif google.enabled %}
+    <button class="btn btn-sm btn-ghost" id="link-sheet">Create Sheet</button>
+    {% else %}
+    <span class="pill pill-draft"><span class="dot"></span>Sheets not connected</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if not hosted %}
+<details class="card feed-card" {% if form.export_key %}open{% endif %}>
+  <summary><strong>Live link for Excel or Numbers</strong>
+    <span class="muted small">— refresh in place instead of re-downloading</span>
+  </summary>
+
+  <p class="muted small">
+    Excel: <strong>Data → From Web</strong>, paste the URL, then <strong>Refresh</strong>
+    whenever you want the latest. The link works only from this Mac while the
+    admin server is running — it is never reachable from the internet.
+  </p>
+
+  {% if form.export_key %}
+  <div class="share">
+    <input readonly id="feed-url"
+           value="{{ base_url }}/feed/{{ form.id }}.csv?key={{ form.export_key }}">
+    <button class="btn btn-sm btn-ghost" id="copy-feed">Copy</button>
+  </div>
+  <div class="row">
+    <button class="btn btn-sm btn-ghost" id="rotate-feed">Rotate key</button>
+    <button class="btn btn-sm btn-ghost" id="revoke-feed">Turn off</button>
+  </div>
+  {% else %}
+  <button class="btn btn-sm" id="rotate-feed">Create live link</button>
+  {% endif %}
+</details>
+{% endif %}
+
+{% if not responses %}
+<div class="empty">
+  {{ media("responses-empty", slots, media_url) }}
+  <h2>Nothing yet</h2>
+  <p class="muted">Share <code>{{ base_url }}/f/{{ form.public_ref }}</code> to start collecting.</p>
+</div>
+{% else %}
+<div class="table-scroll">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Submitted</th>
+        {% for q in form.questions %}<th>{{ q.label }}</th>{% endfor %}
+        {% if form.sheet_id %}<th>Sheet</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in responses %}
+      <tr>
+        <td class="nowrap muted">{{ r.submitted_at.strftime('%d %b %Y, %H:%M') }}</td>
+        {% for q in form.questions %}
+        {% set v = r.payload.get(q.id) %}
+        <td>{% if v is iterable and v is not string %}{{ v | join(', ') }}{% elif v is not none %}{{ v }}{% endif %}</td>
+        {% endfor %}
+        {% if form.sheet_id %}
+        <td>
+          {# Only meaningful when a spreadsheet is actually linked — otherwise
+             `synced` just means "nothing to do", which reads as a false claim. #}
+          {% if r.synced %}<span class="pill pill-live"><span class="dot"></span>Synced</span>
+          {% else %}<span class="pill pill-draft" title="{{ r.sync_error or 'Pending' }}"><span class="dot"></span>Pending</span>{% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('link-sheet')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+  const data = await (await fetch(`/api/forms/{{ form.id }}/sheet`, { method: 'POST' })).json();
+  if (data.created) { location.reload(); }
+  else { btn.disabled = false; btn.textContent = 'Create Sheet'; alert(data.detail); }
+});
+
+document.getElementById('rotate-feed')?.addEventListener('click', async (e) => {
+  e.currentTarget.disabled = true;
+  await fetch(`/api/forms/{{ form.id }}/export-key?rotate=true`, { method: 'POST' });
+  location.reload();
+});
+
+document.getElementById('revoke-feed')?.addEventListener('click', async (e) => {
+  if (!confirm('Turn off the live link? Any spreadsheet using it stops refreshing.')) return;
+  e.currentTarget.disabled = true;
+  await fetch(`/api/forms/{{ form.id }}/export-key?rotate=false`, { method: 'POST' });
+  location.reload();
+});
+
+document.getElementById('copy-feed')?.addEventListener('click', async (e) => {
+  await navigator.clipboard.writeText(document.getElementById('feed-url').value);
+  const btn = e.currentTarget;
+  btn.textContent = 'Copied';
+  setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+});
+</script>
+{% endblock %}

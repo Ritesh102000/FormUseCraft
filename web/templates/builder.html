@@ -1,0 +1,128 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% block title %}{{ form.title if form else 'New form' }} — {{ brand_name }}{% endblock %}
+{% block main_class %}wrap{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">{{ 'Editing' if form else 'Draft' }}</p>
+    <h1 class="display" id="head-title">{{ form.title if form else 'New form' }}</h1>
+    <p class="muted small" id="head-sub">
+      {% if form %}<a href="/f/{{ form.public_ref }}" target="_blank" rel="noopener">{{ base_url }}/f/{{ form.public_ref }}</a>
+      {% else %}Not saved yet{% endif %}
+    </p>
+  </div>
+  <div class="head-actions">
+    <span id="save-state" class="save-state"></span>
+    {% if form %}
+    <a class="btn btn-sm" href="/admin/{{ form.id }}/responses">Responses</a>
+    {% if hosted and form.booking_mode == 'google_api' %}<a class="btn btn-sm" href="/admin/{{ form.id }}/booking">Meeting settings</a>{% endif %}
+    <button class="btn btn-sm btn-danger" id="delete-form">Delete</button>
+    {% endif %}
+    <button class="btn btn-primary" id="save-form">Save</button>
+  </div>
+</div>
+
+<div id="builder-feedback"
+     class="alert {{ 'alert-error' if form and form.sheet_error else '' }} builder-feedback"
+     role="alert"
+     {% if not form or not form.sheet_error %}hidden{% endif %}>
+  {% if form and form.sheet_error %}<strong>Google Sheets needs attention.</strong> {{ form.sheet_error }}{% endif %}
+</div>
+
+<div class="builder-grid">
+  <aside class="card settings">
+    <h3>Form settings</h3>
+    <label class="field-row"><span>Title</span><input id="f-title" type="text" maxlength="300" placeholder="Untitled form"></label>
+    <label class="field-row"><span>Description</span><textarea id="f-description" rows="3" maxlength="5000" placeholder="Shown under the title, above the questions"></textarea></label>
+
+    <fieldset class="modes">
+      <legend>Layout</legend>
+      <label class="mode-option"><input type="radio" name="mode" value="single"><span><strong>One page</strong><em>Every question at once</em></span></label>
+      <label class="mode-option"><input type="radio" name="mode" value="section"><span><strong>By section</strong><em>One section per screen</em></span></label>
+      <label class="mode-option"><input type="radio" name="mode" value="one_by_one"><span><strong>One at a time</strong><em>A single question per screen</em></span></label>
+    </fieldset>
+
+    <label class="field-row"><span>Accent colour</span><input id="f-accent" type="color" value="#4f46e5"></label>
+    <label class="field-row"><span>Confirmation message</span><textarea id="f-confirm" rows="2" maxlength="1000"></textarea></label>
+    <label class="field-row"><span>Meeting link</span><input id="f-meeting-url" type="url" maxlength="1000" placeholder="https://calendly.com/your-name/meeting"></label>
+    <label class="field-row"><span>Meeting button text</span><input id="f-meeting-label" type="text" maxlength="100" placeholder="Book a meeting"></label>
+    <label class="toggle">
+      <input id="f-published" type="checkbox">
+      <span><strong>Published</strong><em>Drafts are visible only to you</em></span>
+    </label>
+
+
+  </aside>
+
+  <div class="canvas">
+    <div id="sections"></div>
+    <button class="btn btn-dashed" id="add-section">+ Add section</button>
+  </div>
+</div>
+
+<template id="tpl-section">
+  <section class="card section-block">
+    <header class="section-head">
+      <input class="s-title" type="text" maxlength="300" placeholder="Section title">
+      <div class="row-actions">
+        <button class="icon-btn" data-act="up" title="Move up">↑</button>
+        <button class="icon-btn" data-act="down" title="Move down">↓</button>
+        <button class="icon-btn danger" data-act="del" title="Delete section">✕</button>
+      </div>
+    </header>
+    <input class="s-desc" type="text" maxlength="2000" placeholder="Section description (optional)">
+    <div class="questions"></div>
+    <button class="btn btn-dashed" data-act="add-q">+ Add question</button>
+  </section>
+</template>
+
+<template id="tpl-question">
+  <div class="question">
+    <div class="q-main">
+      <input class="q-label" type="text" maxlength="500" placeholder="Question">
+      <select class="q-type">
+        {% for key, meta in question_types.items() %}
+        <option value="{{ key }}">{{ meta.label }}</option>
+        {% endfor %}
+      </select>
+      <div class="row-actions">
+        <button class="icon-btn" data-act="up" title="Move up">↑</button>
+        <button class="icon-btn" data-act="down" title="Move down">↓</button>
+        <button class="icon-btn danger" data-act="del" title="Delete question">✕</button>
+      </div>
+    </div>
+    <input class="q-help" type="text" maxlength="2000" placeholder="Helper text (optional)">
+    <div class="q-options hidden">
+      <div class="opt-list"></div>
+      <button class="btn btn-sm btn-ghost" data-act="add-opt">+ Add option</button>
+    </div>
+    <div class="q-scale hidden">
+      <label class="field-row"><span>Min</span><input class="q-min" type="number" value="1"></label>
+      <label class="field-row"><span>Max</span><input class="q-max" type="number" value="5"></label>
+    </div>
+    <label class="toggle">
+      <input class="q-required" type="checkbox"><span><strong>Required</strong></span>
+    </label>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.FORM_ID = {{ (form.id | tojson) if form else 'null' }};
+  window.FORM_DATA = {{ (form_data | tojson) if form_data else 'null' }};
+  window.OPTION_TYPES = ["select", "radio", "checkbox"];
+  window.SCALE_TYPES = ["scale", "rating", "number"];
+</script>
+<script src="{{ static_url('builder.js') }}"></script>
+{% endblock %}

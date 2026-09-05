@@ -1,0 +1,83 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% from "components/ui.html" import brand %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ static_url('css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/base.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/components.css') }}">
+  {% block styles %}<link rel="stylesheet" href="{{ static_url('css/admin.css') }}">{% endblock %}
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='28' fill='%232555e7'/><path d='M28 50c0-15 10-25 22-25h5v14h-5c-5 0-8 4-8 11s3 11 8 11h5v14h-5C38 75 28 65 28 50Zm17-7h10v14H45V43Zm10-18h-5v14h5c5 0 8 4 8 11s-3 11-8 11h-5v14h5c12 0 22-10 22-25S67 25 55 25Z' fill='white'/></svg>">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}admin-app{% endblock %}">
+  {% block chrome %}
+  <aside class="sidebar">
+    <div class="sidebar__brand">{{ brand(slots, media_url, name=brand_name) }}</div>
+
+    <nav class="sidebar__nav" aria-label="Admin navigation">
+      <p class="nav-label">Workspace</p>
+      <a class="nav-item {{ 'is-active' if request.url.path == '/' or (request.url.path.startswith('/admin/') and request.url.path != '/admin/media') else '' }}" href="/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13ZM8 8h8M8 12h8M8 16h5"/></svg>
+        <span>Forms</span>
+      </a>
+      <a class="nav-item {{ 'is-active' if request.url.path == '/admin/media' else '' }}" href="/admin/media">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5 17 4.5-4 3.5 3 2.5-2 3.5 3"/></svg>
+        <span>Media library</span>
+      </a>
+      {% if hosted %}
+      <a class="nav-item" href="/admin/integrations">Google integrations</a>
+      <a class="nav-item" href="/admin/new-meeting">New meeting form</a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar__create">
+      <a href="/admin/new" class="btn btn-primary btn-block">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New form
+      </a>
+    </div>
+
+    <div class="sidebar__footer">
+      <div class="privacy-note">
+        <span class="privacy-note__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        </span>
+        <span><strong>Private admin</strong><small>{{ "Protected by your owner login" if hosted else "Only available on this device" }}</small></span>
+      </div>
+      <form method="post" action="/logout">
+        <button type="submit" class="nav-item nav-button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M14 8l4 4-4 4M9 12h9"/></svg>
+          <span>Sign out</span>
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <header class="mobile-topbar">
+    {{ brand(slots, media_url, name=brand_name) }}
+    <nav>
+      <a href="/">Forms</a>
+      {% if hosted %}<a href="/admin/integrations">Google</a>{% else %}<a href="/admin/media">Media</a>{% endif %}
+      <a href="/admin/new" class="btn btn-primary btn-sm">New</a>
+    </nav>
+  </header>
+  {% endblock %}
+
+  <main class="{% block main_class %}wrap{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

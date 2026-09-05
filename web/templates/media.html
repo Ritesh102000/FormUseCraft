@@ -1,0 +1,71 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% from "components/ui.html" import media %}
+{% block title %}Images — {{ brand_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Assets</p>
+    <h1 class="display">Images</h1>
+    <p class="muted small">
+      {{ filled }} of {{ slots|length }} filled — drop files into
+      <code>web/static/img/</code> and refresh.
+    </p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-sm" href="/admin/media/briefs.txt">Download all briefs</a>
+  </div>
+</div>
+
+<div class="asset-progress" role="img"
+     aria-label="{{ filled }} of {{ slots|length }} images filled">
+  <div class="asset-progress__bar" style="width: {{ (filled / slots|length * 100)|round }}%"></div>
+</div>
+
+<div class="asset-grid">
+  {% for name, slot in slots.items() %}
+  {% set url = media_url(name) %}
+  <article class="card asset {{ 'is-filled' if url else 'is-empty' }}">
+    <div class="asset__preview">
+      {{ media(name, slots, media_url, compact=True) }}
+    </div>
+    <div class="asset__body">
+      <div class="spread">
+        <h2>{{ slot.label }}</h2>
+        <span class="pill {{ 'pill-live' if url else 'pill-draft' }}">
+          <span class="dot"></span>{{ 'Filled' if url else 'Missing' }}
+        </span>
+      </div>
+      <p class="muted small">{{ slot.description }}</p>
+      <div class="share">
+        <input readonly value="{{ name }}.webp">
+        <button class="btn btn-sm btn-ghost" data-copy-btn>Copy</button>
+      </div>
+      <p class="muted small">{{ slot.size }} · ratio {{ slot.ratio }}</p>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-copy-btn]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(btn.previousElementSibling.value);
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+});
+</script>
+{% endblock %}

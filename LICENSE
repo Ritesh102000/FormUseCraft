@@ -1,0 +1,67 @@
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+
+Formcraft Attribution License 1.0
+
+Copyright (c) 2026 catapultaiwork
+https://catapultaiwork.com
+
+1. Permission
+
+The copyright holder permits anyone to use, copy, inspect, modify, distribute,
+sublicense, and sell this software and its accompanying original documentation
+(the "Software"), for personal or commercial purposes, without a license fee,
+subject to the conditions below. Hosting the Software for others is permitted.
+
+2. Required notices
+
+Every copy or substantial portion of the Software that you distribute must
+include this license and the copyright notice. You may license your own changes
+separately, provided your terms do not remove or contradict these conditions
+for the Software or its derivatives.
+
+3. Required visible provider attribution
+
+Every user-facing form page served using the Software or a modified version,
+including its submission confirmation and associated booking views, must
+visibly display the words "Powered by catapultaiwork" with "catapultaiwork"
+linking directly to https://catapultaiwork.com.
+
+The credit may be a small footer line. It must remain readable, accessible,
+and reasonably discoverable in the normal page layout on desktop and mobile.
+It must not be removed, hidden, obscured, made illegible, disabled, or replaced
+by another provider's credit. The link must remain functional. Ordinary
+scrolling to a footer is allowed; requiring an extra click or interaction to
+reveal the credit is not. The same condition applies to embedded form views.
+
+You may otherwise customize the application name, design, and functionality.
+You must pass this attribution condition to recipients of modified or
+redistributed versions. Exceptions require the copyright holder's written
+permission.
+
+4. No endorsement
+
+The required credit identifies the original provider. It does not imply that
+catapultaiwork endorses your forms, services, content, or modifications, and
+this license grants no broader right to use the provider's trademarks.
+
+5. Third-party material and submitted data
+
+Dependencies and third-party material retain their own licenses. This license
+does not claim ownership of forms, responses, or other data entered by users,
+nor does it grant rights to third-party images or content you add.
+
+6. Warranty and liability
+
+The Software is supplied as is, without warranties, including warranties of
+fitness, merchantability, non-infringement, accuracy, availability, or security.
+To the extent permitted by applicable law, its authors and copyright holders
+are not liable for losses, damages, claims, or other liability arising from
+use, modification, distribution, or inability to use the Software.
+
+This is a custom source-available license with a visible attribution condition.
+It is not the MIT license and is not represented as an OSI-approved license.

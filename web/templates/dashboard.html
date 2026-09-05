@@ -1,0 +1,143 @@
+<!--
+Formcraft by catapultaiwork — https://catapultaiwork.com
+Source-available with required attribution; see LICENSE.
+Personal and commercial use is allowed. Every hosted form must retain the small
+"Powered by catapultaiwork" link. There is no builder setting to hide it.
+People controlling the source can edit it, but the license requires this credit.
+This is a custom attribution license, not standard MIT or OSI-approved open source.
+-->
+
+{% extends "base.html" %}
+{% from "components/ui.html" import pill %}
+{% block title %}Forms — {{ brand_name }}{% endblock %}
+
+{% block content %}
+{% set total_responses = forms|sum(attribute='response_count') %}
+{% set live_count = forms|selectattr('is_published')|list|length %}
+
+<div class="page-head">
+  <div class="page-head__copy">
+    <p class="eyebrow">Workspace</p>
+    <h1 class="display">Forms</h1>
+    <p class="muted">Create private links, collect responses, and export the results.</p>
+  </div>
+  <div class="head-actions">
+  {% if hosted %}<a href="/admin/new-meeting" class="btn">New meeting form</a>{% endif %}
+  <a href="/admin/new" class="btn btn-primary">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    New form
+  </a>
+  </div>
+</div>
+
+<section class="overview-grid" aria-label="Workspace overview">
+  <article class="overview-card">
+    <span class="overview-card__label">Total forms</span>
+    <strong class="overview-card__value">{{ forms|length }}</strong>
+    <span class="overview-card__meta">In your private workspace</span>
+  </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Published links</span>
+    <strong class="overview-card__value">{{ live_count }}</strong>
+    <span class="overview-card__meta">Ready to receive responses</span>
+  </article>
+  <article class="overview-card">
+    <span class="overview-card__label">Responses</span>
+    <strong class="overview-card__value">{{ total_responses }}</strong>
+    <span class="overview-card__meta">Across every form</span>
+  </article>
+</section>
+
+<div class="status-bar {{ 'is-ok' if google.ready else 'is-warn' }}">
+  <span class="dot"></span>
+  <strong>Google Sheets</strong>
+  {% if hosted %}<a href="/admin/integrations">Manage connection</a>{% endif %}
+  <span class="muted">
+    {% if google.enabled %}{{ google.detail }}
+    {% else %}Not connected. Responses remain safely stored for later backfill.{% endif %}
+  </span>
+  {% if google.enabled %}
+  <button class="btn btn-sm btn-ghost push" id="retry-sync">Retry pending</button>
+  {% else %}
+  <span class="pill pill-draft push"><span class="dot"></span>Setup required</span>
+  {% endif %}
+</div>
+
+{% if not forms %}
+<div class="card empty">
+  <span class="empty-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+  </span>
+  <div>
+    <h2>No forms yet</h2>
+    <p class="muted">Build an intake, onboarding, or feedback form in a few minutes.</p>
+  </div>
+  <a href="/admin/new" class="btn btn-primary btn-lg">Create your first form</a>
+</div>
+{% else %}
+<div class="section-title-row">
+  <h2>All forms</h2>
+  <span class="muted small">{{ forms|length }} total</span>
+</div>
+
+<div class="form-grid">
+  {% for f in forms %}
+  <article class="card card-hover form-card" style="--accent: {{ f.accent }}">
+    <div class="form-card__top">
+      <div class="form-card__accent"></div>
+      <div class="form-card__title">
+        <div>
+          <h2><a href="/admin/{{ f.id }}">{{ f.title }}</a></h2>
+          {% if f.description %}<p class="muted small clamp-2" style="margin-top:7px">{{ f.description }}</p>{% endif %}
+        </div>
+        {{ pill(f.is_published) }}
+      </div>
+
+      <dl class="meta">
+        <div><dt>Questions</dt><dd>{{ f.question_count }}</dd></div>
+        <div><dt>Responses</dt><dd>{{ f.response_count }}</dd></div>
+        <div><dt>Layout</dt><dd>{{ {'single':'One page','section':'Sections','one_by_one':'One by one'}[f.display_mode] }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="form-card__footer">
+      <div class="card-actions">
+        <a class="btn btn-sm" href="/admin/{{ f.id }}">Edit</a>
+        <a class="btn btn-sm" href="/admin/{{ f.id }}/responses">Responses</a>
+        {% if f.sheet_url %}<a class="btn btn-sm btn-ghost" href="{{ f.sheet_url }}" target="_blank" rel="noopener">Google Sheet ↗</a>{% endif %}
+        <a class="btn btn-sm btn-ghost" href="/f/{{ f.public_ref }}" target="_blank" rel="noopener">Open link ↗</a>
+        {% if f.response_count %}<a class="btn btn-sm btn-ghost" href="/admin/{{ f.id }}/export.xlsx">Excel</a>{% endif %}
+      </div>
+      <div class="share">
+        <input aria-label="Public form link" readonly value="{{ base_url }}/f/{{ f.public_ref }}" data-copy>
+        <button class="btn btn-sm" data-copy-btn>Copy link</button>
+      </div>
+      {% if f.sheet_error %}<p class="alert alert-error small">Sheet: {{ f.sheet_error }}</p>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-copy-btn]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(btn.previousElementSibling.value);
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  });
+});
+
+const retry = document.getElementById('retry-sync');
+retry?.addEventListener('click', async () => {
+  retry.disabled = true;
+  retry.textContent = 'Syncing…';
+  const data = await (await fetch('/api/sync', { method: 'POST' })).json();
+  retry.textContent = `${data.synced}/${data.attempted} synced`;
+  setTimeout(() => { retry.disabled = false; retry.textContent = 'Retry pending'; }, 2000);
+});
+</script>
+{% endblock %}
