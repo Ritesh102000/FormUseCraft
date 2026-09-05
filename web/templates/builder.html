@@ -60,7 +60,7 @@ This is a custom attribution license, not standard MIT or OSI-approved open sour
       <input id="f-ai-voice" type="checkbox">
       <span><strong>AI voice assistance</strong><em>Visitors can choose to fill answers by voice. Never books meetings or submits for them.</em></span>
     </label>
-    {% if not ai_voice_available %}<p class="muted small">Voice requires an environment OpenAI key and FORMCRAFT_AI_VOICE_ENABLED=1. <a href="/admin/ai">AI setup</a></p>{% endif %}
+    {% if not ai_voice_available %}<p class="muted small">Voice becomes available automatically with an environment OpenAI key, a valid installation secret, and a nonzero usage cap. <a href="/admin/ai">AI setup</a></p>{% endif %}
     <label class="toggle">
       <input id="f-published" type="checkbox">
       <span><strong>Published</strong><em>Drafts are visible only to you</em></span>

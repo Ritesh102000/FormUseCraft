@@ -89,7 +89,6 @@ def client(monkeypatch):
         admin_password="synthetic-owner-password",
         admin_password_hash="",
         openai_api_key=KEY,
-        ai_voice_enabled=True,
     )
     for module in (ai, app, auth, config, db, google_connection, hosted, sheets):
         monkeypatch.setattr(module, "settings", patched)
@@ -275,7 +274,7 @@ def test_meeting_creation_requires_calendar_and_adds_server_bindings(
     assert bindings["event_id"]["config"]["hidden"]
 
 
-def test_voice_requires_three_switches_and_public_form(client, monkeypatch):
+def test_voice_requires_key_and_form_opt_in(client, monkeypatch):
     for published, enabled in [(False, True), (True, False)]:
         saved = public_form(f"{published}-{enabled}", published, enabled)
         assert session(client, saved).status_code == 404
@@ -284,7 +283,6 @@ def test_voice_requires_three_switches_and_public_form(client, monkeypatch):
     assert "voice-widget" in client.get(f"/f/{saved['public_ref']}").text
     for changes in (
         {"openai_api_key": ""},
-        {"ai_voice_enabled": False},
         {"ai_voice_daily_turns": 0},
     ):
         with monkeypatch.context() as patch:
@@ -484,3 +482,19 @@ def test_provider_errors_do_not_echo_credentials(client, monkeypatch):
         asyncio.run(ai.openai_request(KEY, "responses", json={}))
     assert raised.value.status_code == 502
     assert KEY not in str(raised.value.detail)
+
+
+@pytest.mark.parametrize("legacy_flag", [None, "0", "1"])
+def test_environment_key_enables_voice_without_global_switch(monkeypatch, legacy_flag):
+    monkeypatch.setenv("OPENAI_API_KEY", KEY)
+    monkeypatch.delenv("FORMCRAFT_OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv(
+        "FORMCRAFT_SECRET_KEY", "synthetic-unique-installation-secret-123456"
+    )
+    monkeypatch.setenv("FORMCRAFT_AI_VOICE_DAILY_TURNS", "200")
+    if legacy_flag is None:
+        monkeypatch.delenv("FORMCRAFT_AI_VOICE_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("FORMCRAFT_AI_VOICE_ENABLED", legacy_flag)
+    monkeypatch.setattr(ai, "settings", config.load_settings())
+    assert ai.voice_available()

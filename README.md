@@ -97,8 +97,8 @@ Choose **Build with AI** in the owner dashboard. Supply a key for that request,
 or configure `OPENAI_API_KEY` on the server. PDFs and images are accepted as
 owner reference inputs. Generated forms start as private drafts.
 
-For public voice, set `FORMCRAFT_AI_VOICE_ENABLED=1` with your environment key,
-redeploy, then enable **AI voice assistance** on each form. Visitors explicitly
+An environment OpenAI key makes voice available automatically after deployment.
+Enable **AI voice assistance** on each intended form. Visitors explicitly
 start it; it confirms field values and never submits, books meetings, or pays.
 API usage is billed to the key owner and capped by shared app usage limits.
 See [AI setup, privacy, limits, and troubleshooting](docs/AI.md). Payment

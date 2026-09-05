@@ -218,11 +218,10 @@ privately in the deployment environment. Never ask them to paste it into chat.
 Reference PDF/image inputs are supported; generation creates a preview, then the
 owner chooses to save an editable private draft.
 
-For respondent voice, configure the environment key,
-`FORMCRAFT_AI_VOICE_ENABLED=1`, a unique secret of at least 32 characters, and
-an appropriate `FORMCRAFT_AI_VOICE_DAILY_TURNS` cap (default 200). Redeploy and
-enable voice in each intended form's settings. Explain API costs, shared usage
-limits, and audio processing by OpenAI. A builder-only request key cannot fund
+For respondent voice, configure the environment key, a unique secret of at least
+32 characters, and an appropriate `FORMCRAFT_AI_VOICE_DAILY_TURNS` cap (default 200). Redeploy and
+voice becomes available automatically. Enable it in each intended form's settings.
+Explain API costs, shared usage limits, and audio processing by OpenAI. A builder-only request key cannot fund
 public voice. Verify consent before microphone access, answer confirmation,
 manual submission, and manual scheduling handoff using synthetic answers.
 Payment processing is not implemented; do not describe the handoff prompt as

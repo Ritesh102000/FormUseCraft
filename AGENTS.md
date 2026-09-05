@@ -95,7 +95,7 @@ git diff --check
 
 - Keep API keys server-side or request-only; never persist browser-supplied keys.
 - AI generation returns a validated preview; saving creates an unpublished draft.
-- Voice requires a global environment key/switch plus per-form opt-in and visitor consent.
+- Voice requires an environment key plus per-form opt-in and visitor consent.
 - Voice can fill visible fields only; never expose submit, booking, payment, or provider metadata actions.
 - Keep shared PostgreSQL usage caps, bounded uploads, and form-bound expiring sessions.
 - Live AI/provider claims require live evidence; tests use mocks. See `docs/AI.md`.

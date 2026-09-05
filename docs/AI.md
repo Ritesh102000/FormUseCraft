@@ -50,11 +50,10 @@ place them in your ignored `.env`. Never commit a real key.
 
 | Variable | Purpose / default |
 | --- | --- |
-| `OPENAI_API_KEY` | Your OpenAI project API key. Enables environment-backed owner generation. |
+| `OPENAI_API_KEY` | Your OpenAI project API key. Enables owner generation and makes per-form voice available automatically. |
 | `FORMCRAFT_OPENAI_API_KEY` | Optional explicit override, taking precedence over `OPENAI_API_KEY`. |
 | `FORMCRAFT_AI_MODEL` | Responses model supporting text/image/PDF input and Structured Outputs; default `gpt-4.1-mini`. |
 | `FORMCRAFT_AI_TRANSCRIBE_MODEL` | Audio transcription model; default `gpt-4o-mini-transcribe`. |
-| `FORMCRAFT_AI_VOICE_ENABLED` | Global public voice switch; defaults to `0`. Set `1` to permit it. |
 | `FORMCRAFT_AI_VOICE_DAILY_TURNS` | Shared installation cap on recorded voice turns; default `200`, configurable from `0` to `5000`. `0` disables voice. |
 | `FORMCRAFT_SECRET_KEY` | Existing unique installation secret, at least 32 characters for signed voice sessions. |
 
@@ -65,9 +64,14 @@ never enables public voice; public voice requires an environment key.
 
 ## Enable voice on a form
 
-After setting the environment variables, open a form's builder, turn on **AI voice
-assistance**, and save. Voice appears only on published forms when both the global
-switch and the form setting are enabled. Draft previews do not start public voice.
+An environment OpenAI key makes voice available automatically. Open a form's
+builder, turn on **AI voice assistance**, and save. Voice appears only on published
+forms with this setting enabled. Draft previews do not start public voice.
+
+No separate global enable flag is needed; the former `FORMCRAFT_AI_VOICE_ENABLED`
+variable is ignored. Key access, billing, and model availability are checked when
+a request reaches OpenAI, not by a paid probe on every page load. If the key is
+invalid or unavailable, the visitor sees an error and can continue typing.
 
 Visitors see a small animated globe at the bottom of the form with an invitation.
 Opening it does not request microphone access. **Yes, use voice** gives consent
@@ -144,7 +148,7 @@ still finish and incur usage. Restart voice after an expired session.
 
 | Issue | Recovery |
 | --- | --- |
-| No globe | Check environment key, global switch, secret length, nonzero cap, published state, and the form's voice setting. Redeploy after environment changes. |
+| No globe | Check environment key, secret length, nonzero cap, published state, and the form's voice setting. Redeploy after environment changes. |
 | Owner generation fails | Check API billing/model access, enter the request key again if needed, reduce document size, or simplify the description. |
 | Voice 403 | Open the canonical `FORMCRAFT_BASE_URL`; restart an expired session or one invalidated by form edits. |
 | Voice 429 | Shared usage cap reached. Type answers or wait for the window to expire. |

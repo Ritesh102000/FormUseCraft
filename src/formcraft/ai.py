@@ -89,7 +89,6 @@ class CreateDraft(InputModel):
 def voice_available() -> bool:
     return bool(
         settings.openai_api_key
-        and settings.ai_voice_enabled
         and len(settings.secret_key) >= 32
         and settings.ai_voice_daily_turns > 0
     )

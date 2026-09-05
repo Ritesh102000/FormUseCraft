@@ -96,8 +96,8 @@ See [the Google guide](docs/GOOGLE_SHEETS.md) for consent-screen and token limit
 ## Optional AI configuration
 
 The owner dashboard includes **Build with AI** using a per-request OpenAI key
-or the server's `OPENAI_API_KEY`. For visitor voice assistance, additionally
-set `FORMCRAFT_AI_VOICE_ENABLED=1`, redeploy, and opt in each published form.
+or the server's `OPENAI_API_KEY`. An environment key makes voice available
+automatically after deployment; opt in each published form in its settings.
 Use `FORMCRAFT_AI_VOICE_DAILY_TURNS` to choose a shared turn cap (default 200).
 See [AI setup](docs/AI.md) for models, privacy, usage limits, and acceptance checks.
 Public voice fills answer fields; submission and booking remain manual.

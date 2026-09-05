@@ -88,7 +88,7 @@ unimplemented; a payment handoff prompt is not a payment integration.
   unpublished draft. Request-only keys are never persisted; environment keys
   are also supported. Native meeting drafts require connected Google Calendar
   and receive server-generated attendee bindings and hidden booking metadata.
-- Public voice requires the environment key, global switch, per-form flag, and
+- Public voice requires the environment key, per-form flag, and
   visitor opt-in. It maps short recordings to one visible field, validates and
   confirms the value, and leaves submission and scheduling to the visitor.
 - No voice action can save a response, book, pay, or write provider metadata.
@@ -105,3 +105,15 @@ confirmation, stopping microphone tracks, manual submission, and scheduling
 handoff in all three form layouts, including mobile. Browser speech/microphone
 and OpenAI responses were synthetic. No live OpenAI request or deployment was
 made; live speech quality and account access remain unverified.
+
+
+### Simplified voice activation
+
+An environment OpenAI key now makes voice available automatically, with no global
+voice-enable variable. The owner still opts in each form; visitor consent and
+usage caps remain required. The legacy FORMCRAFT_AI_VOICE_ENABLED variable is
+ignored, including when old deployments still set it to 0. Provider access is
+checked during actual requests, and errors leave manual filling available.
+
+Activation-change verification: 157 tests, Ruff, JavaScript syntax, release notice
+scan, and whitespace checks passed. Live key access remains checked on use.
